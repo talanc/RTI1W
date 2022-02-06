@@ -6,23 +6,38 @@ public class Camera
     public Vec3 LowerLeftCorner;
     public Vec3 Horizontal;
     public Vec3 Vertical;
+    public Vec3 U;
+    public Vec3 V;
+    public Vec3 W;
+    public double LensRadius;
 
-    public Camera()
+    public Camera(Vec3 lookFrom, Vec3 lookAt, Vec3 vUp, double vFov, double aspectRatio, double aperture, double focusDist)
     {
-        const double AspectRatio = 16.0 / 9.0;
+        var theta = DegreesToRadians(vFov);
+        var h = Tan(theta / 2);
+        var viewportHeight = 2.0 * h;
+        var viewportWidth = aspectRatio * viewportHeight;
 
-        var viewportHeight = 2.0;
-        var viewportWidth = AspectRatio * viewportHeight;
-        var focalLength = 1.0;
+        W = UnitVector(lookFrom - lookAt);
+        U = UnitVector(Cross(vUp, W));
+        V = Cross(W, U);
 
-        Origin = P3(0, 0, 0);
-        Horizontal = V3(viewportWidth, 0, 0);
-        Vertical = V3(0, viewportHeight, 0);
-        LowerLeftCorner = Origin - Horizontal / 2 - Vertical / 2 - V3(0, 0, focalLength);
+        Origin = lookFrom;
+        Horizontal = focusDist * viewportWidth * U;
+        Vertical = focusDist * viewportHeight * V;
+        LowerLeftCorner = Origin - Horizontal / 2 - Vertical / 2 - focusDist * W;
+
+        LensRadius = aperture / 2;
     }
 
-    public Ray GetRay(double u, double v)
+    public Ray GetRay(double s, double t)
     {
-        return new Ray(Origin, LowerLeftCorner + u * Horizontal + v * Vertical - Origin);
+        var rd = LensRadius * RandomInUnitDisk();
+        var offset = U * rd.X + V * rd.Y;
+
+        var rayOrigin = Origin + offset;
+        var rayDirection = LowerLeftCorner + s * Horizontal + t * Vertical - Origin - offset;
+
+        return new Ray(rayOrigin, rayDirection);
     }
 }

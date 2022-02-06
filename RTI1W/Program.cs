@@ -7,34 +7,24 @@ var timer = System.Diagnostics.Stopwatch.StartNew();
 
 // Image
 
-const double AspectRatio = 16.0 / 9.0;
-const int ImageWidth = 400;
+const double AspectRatio = 3.0 / 2.0;
+const int ImageWidth = 1200;
 const int ImageHeight = (int)(ImageWidth / AspectRatio);
-const int SamplesPerPixel = 100;
+const int SamplesPerPixel = 500;
 const int MaxDepth = 50;
 
-// World 
+// World
 
-var matGround = new Lambertian(C3(0.8, 0.8, 0.0));
-var matCenter = new Lambertian(C3(0.1, 0.2, 0.5));
-var matLeft = new Dielectric(1.5);
-var matRight = new Metal(C3(0.8, 0.6, 0.2), 0.0);
-
-var world = new HittableList()
-{
-    List = new()
-    {
-        new Sphere(P3(0, -100.5, -1), 100, matGround),
-        new Sphere(P3(0, 0, -1), 0.5, matCenter),
-        new Sphere(P3(-1, 0, -1), 0.5, matLeft),
-        new Sphere(P3(-1, 0, -1), -0.4, matLeft),
-        new Sphere(P3(1, 0, -1), 0.5, matRight)
-    }
-};
+var world = RandomScene();
 
 // Camera
 
-var camera = new Camera();
+var lookFrom = P3(13, 2, 3);
+var lookAt = P3(0, 0, 0);
+var vUp = P3(0, 1, 0);
+var distToFocus = 10.0;
+var aperture = 0.1;
+var camera = new Camera(lookFrom, lookAt, vUp, 20, AspectRatio, aperture, distToFocus);
 
 // Render
 
@@ -85,4 +75,56 @@ Vec3 RayColor(Ray r, int depth)
     var unitDir = UnitVector(r.Direction);
     var t = 0.5 * (unitDir.Y + 1);
     return (1 - t) * ColorWhite + t * C3(0.5, 0.7, 1.0);
+}
+
+HittableList RandomScene()
+{
+    var world = new HittableList();
+
+    var matGround = new Lambertian(C3(0.5, 0.5, 0.5));
+    world.Add(new Sphere(P3(0, -1000, 0), 1000, matGround));
+
+    for (var a = -11; a < 11; a++)
+    {
+        for (var b = -11; b < 11; b++)
+        {
+            var chooseMat = RandomDouble();
+            var center = P3(a + 0.9 * RandomDouble(), 0.2, b + 0.9 * RandomDouble());
+
+            if ((center - P3(4, 0.2, 0)).Length > 0.9)
+            {
+                Material mat;
+                if (chooseMat < 0.8)
+                {
+                    // Diffuse
+                    var albedo = RandomVec3() * RandomVec3();
+                    mat = new Lambertian(albedo);
+                }
+                else if (chooseMat < 0.95)
+                {
+                    // Metal
+                    var albedo = RandomVec3(0.5, 1);
+                    var fuzz = RandomDouble(0, 0.5);
+                    mat = new Metal(albedo, fuzz);
+                }
+                else
+                {
+                    // Glass
+                    mat = new Dielectric(1.5);
+                }
+                world.Add(new Sphere(center, 0.2, mat));
+            }
+        }
+    }
+
+    var material1 = new Dielectric(1.5);
+    world.Add(new Sphere(P3(0, 1, 0), 1, material1));
+
+    var material2 = new Lambertian(C3(0.4, 0.2, 0.1));
+    world.Add(new Sphere(P3(-4, 1, 0), 1, material2));
+
+    var material3 = new Metal(C3(0.7, 0.6, 0.5), 0.0);
+    world.Add(new Sphere(P3(4, 1, 0), 1, material3));
+
+    return world;
 }

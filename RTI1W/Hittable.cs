@@ -24,6 +24,11 @@ public class HittableList : Hittable
 {
     public List<Hittable> List = new List<Hittable>();
 
+    public void Add(Hittable hittable)
+    {
+        List.Add(hittable);
+    }
+
     public override HitRecord? Hit(Ray r, double tMin, double tMax)
     {
         HitRecord? rec = null;

@@ -80,11 +80,22 @@ public static class Helpers
         while (true)
         {
             var p = RandomVec3(-1, 1);
-            if (p.LengthSquared >= 1)
+            if (p.LengthSquared < 1)
             {
-                continue;
+                return p;
             }
-            return p;
+        }
+    }
+
+    public static Vec3 RandomInUnitDisk()
+    {
+        while (true)
+        {
+            var p = V3(RandomDouble(-1, 1), RandomDouble(-1, 1), 0);
+            if (p.LengthSquared < 1)
+            {
+                return p;
+            }
         }
     }
 
@@ -118,4 +129,6 @@ public static class Helpers
 
     public static Vec3 ColorBlack => V3(0, 0, 0);
     public static Vec3 ColorWhite => V3(1, 1, 1);
+    public static Vec3 ColorRed => V3(1, 0, 0);
+    public static Vec3 ColorBlue => V3(0, 0, 1);
 }
