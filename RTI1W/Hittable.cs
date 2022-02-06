@@ -22,7 +22,7 @@ public struct HitRecord
 
 public class HittableList : Hittable
 {
-    public List<Hittable> List = new List<Hittable>();
+    public List<Hittable> List = new();
 
     public void Add(Hittable hittable)
     {

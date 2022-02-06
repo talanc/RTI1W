@@ -8,10 +8,10 @@ var timer = System.Diagnostics.Stopwatch.StartNew();
 // Image
 
 const double AspectRatio = 3.0 / 2.0;
-const int ImageWidth = 1200;
+const int ImageWidth = 160;
 const int ImageHeight = (int)(ImageWidth / AspectRatio);
-const int SamplesPerPixel = 500;
-const int MaxDepth = 50;
+const int SamplesPerPixel = 30;
+const int MaxDepth = 30;
 
 // World
 
@@ -30,24 +30,33 @@ var camera = new Camera(lookFrom, lookAt, vUp, 20, AspectRatio, aperture, distTo
 
 var image = new int[ImageWidth * ImageHeight];
 
+var scanlinesRemaining = ImageHeight;
 
-for (var j = ImageHeight - 1; j >= 0; j--)
+for (var j = 0; j < ImageHeight; j++)
 {
-    Error.WriteLine($"Scanlines remaining: {j + 1}");
+    Error.WriteLine($"Scanlines remaining: {scanlinesRemaining}");
+    Interlocked.Decrement(ref scanlinesRemaining);
+
+    var pixY = ImageHeight - 1 - j;
+    var dataY = j;
+
     for (var i = 0; i < ImageWidth; i++)
     {
+        var pixX = i;
+        var dataX = i;
+
         var pixelColor = C3(0, 0, 0);
         for (var s = 0; s < SamplesPerPixel; s++)
         {
-            var u = (i + RandomDouble()) / (ImageWidth - 1);
-            var v = (j + RandomDouble()) / (ImageHeight - 1);
+            var u = (pixX + RandomDouble()) / (ImageWidth - 1);
+            var v = (pixY + RandomDouble()) / (ImageHeight - 1);
             var r = camera.GetRay(u, v);
             pixelColor += RayColor(r, MaxDepth);
         }
 
-        SetPixel(i, ImageHeight - 1 - j, pixelColor);
+        SetPixel(image, dataX, dataY, pixelColor);
     }
-}
+};
 
 // Write PPM/P3 file
 WriteLine("P3");
@@ -89,7 +98,7 @@ Vec3 RayColor(Ray r, int depth)
     return (1 - t) * ColorWhite + t * C3(0.5, 0.7, 1.0);
 }
 
-void SetPixel(int x, int y, Vec3 pixelColor)
+void SetPixel(int[] image, int x, int y, Vec3 pixelColor)
 {
     var scale = 1.0 / SamplesPerPixel;
 
@@ -103,7 +112,7 @@ void SetPixel(int x, int y, Vec3 pixelColor)
 
     var i = x + (y * ImageWidth);
     var d = (r << 16) | (g << 8) | b;
-    image![i] = d;
+    image[i] = d;
 }
 
 HittableList RandomScene()
