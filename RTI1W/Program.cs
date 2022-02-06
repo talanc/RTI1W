@@ -28,9 +28,8 @@ var camera = new Camera(lookFrom, lookAt, vUp, 20, AspectRatio, aperture, distTo
 
 // Render
 
-WriteLine("P3");
-WriteLine($"{ImageWidth} {ImageHeight}");
-WriteLine("255");
+var image = new int[ImageWidth * ImageHeight];
+
 
 for (var j = ImageHeight - 1; j >= 0; j--)
 {
@@ -46,8 +45,21 @@ for (var j = ImageHeight - 1; j >= 0; j--)
             pixelColor += RayColor(r, MaxDepth);
         }
 
-        WriteColor(pixelColor, SamplesPerPixel);
+        SetPixel(i, ImageHeight - 1 - j, pixelColor);
     }
+}
+
+// Write PPM/P3 file
+WriteLine("P3");
+WriteLine($"{ImageWidth} {ImageHeight}");
+WriteLine("255");
+for (var i = 0; i < image.Length; i++)
+{
+    var d = image[i];
+    var r = (d >> 16) & 0xFF;
+    var g = (d >> 8) & 0xFF;
+    var b = (d >> 0) & 0xFF;
+    WriteLine($"{r} {g} {b}");
 }
 
 Error.WriteLine($"Done. ({timer.Elapsed.TotalSeconds:F2} secs)");
@@ -75,6 +87,23 @@ Vec3 RayColor(Ray r, int depth)
     var unitDir = UnitVector(r.Direction);
     var t = 0.5 * (unitDir.Y + 1);
     return (1 - t) * ColorWhite + t * C3(0.5, 0.7, 1.0);
+}
+
+void SetPixel(int x, int y, Vec3 pixelColor)
+{
+    var scale = 1.0 / SamplesPerPixel;
+
+    var cr = Sqrt(pixelColor.X * scale);
+    var cg = Sqrt(pixelColor.Y * scale);
+    var cb = Sqrt(pixelColor.Z * scale);
+
+    var r = (int)(256 * Clamp(cr, 0, 0.999));
+    var g = (int)(256 * Clamp(cg, 0, 0.999));
+    var b = (int)(256 * Clamp(cb, 0, 0.999));
+
+    var i = x + (y * ImageWidth);
+    var d = (r << 16) | (g << 8) | b;
+    image![i] = d;
 }
 
 HittableList RandomScene()

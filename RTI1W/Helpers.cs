@@ -35,21 +35,6 @@ public static class Helpers
         return a / a.Length;
     }
 
-    public static void WriteColor(Vec3 pixelColor, int samplesPerPixel)
-    {
-        var scale = 1.0 / samplesPerPixel;
-
-        var r = Sqrt(pixelColor.X * scale);
-        var g = Sqrt(pixelColor.Y * scale);
-        var b = Sqrt(pixelColor.Z * scale);
-
-        var ir = (int)(256 * Clamp(r, 0, 0.999));
-        var ig = (int)(256 * Clamp(g, 0, 0.999));
-        var ib = (int)(256 * Clamp(b, 0, 0.999));
-
-        WriteLine($"{ir} {ig} {ib}");
-    }
-
     public static double DegreesToRadians(double deg)
     {
         return deg * PI / 180;
