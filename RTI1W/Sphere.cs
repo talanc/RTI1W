@@ -17,7 +17,7 @@ public class Sphere : Hittable
     {
         var oc = r.Origin - Center;
         var a = r.Direction.LengthSquared;
-        var halfB = Vec3.Dot(oc, r.Direction);
+        var halfB = Dot(oc, r.Direction);
         var c = oc.LengthSquared - Radius * Radius;
 
         var discriminant = halfB * halfB - a * c;

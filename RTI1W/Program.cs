@@ -82,7 +82,7 @@ Vec3 RayColor(Ray r, int depth)
         return ColorBlack;
     }
 
-    var unitDir = Vec3.UnitVector(r.Direction);
+    var unitDir = UnitVector(r.Direction);
     var t = 0.5 * (unitDir.Y + 1);
     return (1 - t) * ColorWhite + t * C3(0.5, 0.7, 1.0);
 }

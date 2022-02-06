@@ -17,6 +17,24 @@ public static class Helpers
         return new Vec3(x, y, z);
     }
 
+    public static double Dot(Vec3 a, Vec3 b)
+    {
+        return a.X * b.X + a.Y * b.Y + a.Z * b.Z;
+    }
+
+    public static Vec3 Cross(Vec3 a, Vec3 b)
+    {
+        return new Vec3(
+            a.Y * b.Z - a.Z * b.Y,
+            a.Z * b.X - a.X * b.Z,
+            a.X * b.Y - a.Y * b.X);
+    }
+
+    public static Vec3 UnitVector(Vec3 a)
+    {
+        return a / a.Length;
+    }
+
     public static void WriteColor(Vec3 pixelColor, int samplesPerPixel)
     {
         var scale = 1.0 / samplesPerPixel;
@@ -72,13 +90,13 @@ public static class Helpers
 
     public static Vec3 RandomUnitVector()
     {
-        return Vec3.UnitVector(RandomInUnitSphere());
+        return UnitVector(RandomInUnitSphere());
     }
 
     public static Vec3 RandomInHemisphere(Vec3 normal)
     {
         var inUnitSphere = RandomInUnitSphere();
-        if (Vec3.Dot(inUnitSphere, normal) > 0)
+        if (Dot(inUnitSphere, normal) > 0)
         {
             return inUnitSphere;
         }
@@ -87,12 +105,12 @@ public static class Helpers
 
     public static Vec3 Reflect(Vec3 v, Vec3 n)
     {
-        return v - 2 * Vec3.Dot(v, n) * n;
+        return v - 2 * Dot(v, n) * n;
     }
 
     public static Vec3 Refract(Vec3 uv, Vec3 n, double etaiOverEtat)
     {
-        var cosTheta = Min(Vec3.Dot(-uv, n), 1.0);
+        var cosTheta = Min(Dot(-uv, n), 1.0);
         var rOutPerp = etaiOverEtat * (uv + cosTheta * n);
         var rOutParallel = -Sqrt(Abs(1 - rOutPerp.LengthSquared)) * n;
         return rOutPerp + rOutParallel;

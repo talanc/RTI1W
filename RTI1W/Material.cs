@@ -50,7 +50,7 @@ public class Metal : Material
 
     public override ScatterRecord? Scatter(Ray rayIn, HitRecord rec)
     {
-        var reflected = Reflect(Vec3.UnitVector(rayIn.Direction), rec.Normal);
+        var reflected = Reflect(UnitVector(rayIn.Direction), rec.Normal);
         return new ScatterRecord()
         {
             Scattered = new Ray(rec.P, reflected + Fuzz * RandomInUnitSphere()),
@@ -72,8 +72,8 @@ public class Dielectric : Material
     {
         var reflectionRatio = rec.FrontFace ? 1 / Ir : Ir;
 
-        var unitDirection = Vec3.UnitVector(rayIn.Direction);
-        var cosTheta = Min(Vec3.Dot(-unitDirection, rec.Normal), 1);
+        var unitDirection = UnitVector(rayIn.Direction);
+        var cosTheta = Min(Dot(-unitDirection, rec.Normal), 1);
         var sinTheta = Sqrt(1.0 - cosTheta * cosTheta);
 
         var cannotRefract = reflectionRatio * sinTheta > 1;
