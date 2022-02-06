@@ -32,7 +32,7 @@ var image = new int[ImageWidth * ImageHeight];
 
 var scanlinesRemaining = ImageHeight;
 
-for (var j = 0; j < ImageHeight; j++)
+Parallel.For(0, ImageHeight, j =>
 {
     Error.WriteLine($"Scanlines remaining: {scanlinesRemaining}");
     Interlocked.Decrement(ref scanlinesRemaining);
@@ -56,7 +56,7 @@ for (var j = 0; j < ImageHeight; j++)
 
         SetPixel(image, dataX, dataY, pixelColor);
     }
-};
+});
 
 // Write PPM/P3 file
 WriteLine("P3");
