@@ -4,16 +4,13 @@ public class Sphere : Hittable
 {
     public Vec3 Center;
     public double Radius;
+    public Material Material;
 
-    public Sphere()
-    {
-
-    }
-
-    public Sphere(Vec3 center, double radius)
+    public Sphere(Vec3 center, double radius, Material material)
     {
         Center = center;
         Radius = radius;
+        Material = material;
     }
 
     public override HitRecord? Hit(Ray r, double tMin, double tMax)
@@ -47,7 +44,8 @@ public class Sphere : Hittable
         var rec = new HitRecord()
         {
             P = p,
-            T = t
+            T = t,
+            Material = Material,
         };
         rec.SetFaceNormal(r, outwardNormal);
         return rec;

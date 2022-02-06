@@ -19,6 +19,12 @@ public struct Vec3 : IEquatable<Vec3>
 
     public double Length => Sqrt(LengthSquared);
 
+    public bool IsNearZero()
+    {
+        const double S = 1e-8;
+        return Abs(X) < S && Abs(Y) < S && Abs(Z) < S;
+    }
+
     public static double Dot(Vec3 a, Vec3 b)
     {
         return a.X * b.X + a.Y * b.Y + a.Z * b.Z;
