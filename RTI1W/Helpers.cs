@@ -116,4 +116,9 @@ public static class Helpers
     public static Vec3 ColorWhite => V3(1, 1, 1);
     public static Vec3 ColorRed => V3(1, 0, 0);
     public static Vec3 ColorBlue => V3(0, 0, 1);
+
+    public static double Lerp(double t, double v1, double v2)
+    {
+        return (1 - t) * v1 + t * v2;
+    }
 }
