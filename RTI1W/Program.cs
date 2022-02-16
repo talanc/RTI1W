@@ -16,6 +16,8 @@ const int MaxDepth = 30;
 // World
 
 var world = RandomScene();
+var bvh = BvhHelper.CreateBvh(world.List); // TODO FIX
+var bvhWorld = new BvhHittable(bvh); // TODO FIX
 
 // Camera
 
