@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.32112.339
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RTI1W", "RTI1W\RTI1W.csproj", "{BE17BB2D-5E83-4897-A81B-5288EEA9F07F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RTI1W", "RTI1W\RTI1W.csproj", "{BE17BB2D-5E83-4897-A81B-5288EEA9F07F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RTI1W.Tests", "RTI1W.Tests\RTI1W.Tests.csproj", "{104B0119-F9D7-460F-8E60-63FFEBF2A8BA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{BE17BB2D-5E83-4897-A81B-5288EEA9F07F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BE17BB2D-5E83-4897-A81B-5288EEA9F07F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BE17BB2D-5E83-4897-A81B-5288EEA9F07F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{104B0119-F9D7-460F-8E60-63FFEBF2A8BA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{104B0119-F9D7-460F-8E60-63FFEBF2A8BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{104B0119-F9D7-460F-8E60-63FFEBF2A8BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{104B0119-F9D7-460F-8E60-63FFEBF2A8BA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

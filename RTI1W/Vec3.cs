@@ -60,9 +60,19 @@ public struct Vec3 : IEquatable<Vec3>
         return new Vec3(a * b.X, a * b.Y, a * b.Z);
     }
 
+    public static Vec3 operator /(Vec3 a, Vec3 b)
+    {
+        return new Vec3(a.X / b.X, a.Y / b.Y, a.Z / b.Z);
+    }
+
     public static Vec3 operator /(Vec3 a, double b)
     {
         return new Vec3(a.X / b, a.Y / b, a.Z / b);
+    }
+
+    public static Vec3 operator /(double a, Vec3 b)
+    {
+        return new Vec3(a / b.X, a / b.Y, a / b.Z);
     }
 
     public override string ToString()

@@ -54,8 +54,10 @@ public class BvhHittable : Hittable
             return null;
         }
 
-        // TODO code to test r and node.Bounds
+        // Ignore if no intersection
+        if (!IntersectRayBox(r, node.Bounds, tMin, tMax))
         {
+            return null;
         }
 
         if (node.Item != null)

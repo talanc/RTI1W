@@ -121,4 +121,57 @@ public static class Helpers
     {
         return (1 - t) * v1 + t * v2;
     }
+
+    public static bool IsNearZero(double v)
+    {
+        const double S = 1e-8;
+        return Abs(v) < S;
+    }
+
+    public static bool IntersectRayBox(Ray ray, Box3 box)
+    {
+        return IntersectRayBox(ray, box, 0, double.PositiveInfinity);
+    }
+
+    public static bool IntersectRayBox(Ray ray, Box3 box, double tMin, double tMax)
+    {
+        var invDirX = 1 / ray.Direction.X;
+        var invDirY = 1 / ray.Direction.Y;
+        var invDirZ = 1 / ray.Direction.Z;
+
+        var t0x = (box.Min.X - ray.Origin.X) * invDirX;
+        var t0y = (box.Min.Y - ray.Origin.Y) * invDirY;
+        var t0z = (box.Min.Z - ray.Origin.Z) * invDirZ;
+
+        var t1x = (box.Max.X - ray.Origin.X) * invDirX;
+        var t1y = (box.Max.Y - ray.Origin.Y) * invDirY;
+        var t1z = (box.Max.Z - ray.Origin.Z) * invDirZ;
+
+        if (invDirX < 0) (t0x, t1x) = (t1x, t0x);
+        if (invDirY < 0) (t0y, t1y) = (t1y, t0y);
+        if (invDirZ < 0) (t0z, t1z) = (t1z, t0z);
+
+        tMin = t0x > tMin ? t0x : tMin;
+        tMax = t1x < tMax ? t1x : tMax;
+        if (tMax <= tMin)
+        {
+            return false;
+        }
+
+        tMin = t0y > tMin ? t0y : tMin;
+        tMax = t1y < tMax ? t1y : tMax;
+        if (tMax <= tMin)
+        {
+            return false;
+        }
+
+        tMin = t0z > tMin ? t0z : tMin;
+        tMax = t1z < tMax ? t1z : tMax;
+        if (tMax <= tMin)
+        {
+            return false;
+        }
+
+        return true;
+    }
 }

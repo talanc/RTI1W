@@ -16,8 +16,6 @@ const int MaxDepth = 30;
 // World
 
 var world = RandomScene();
-var bvh = BvhHelper.CreateBvh(world.List); // TODO FIX
-var bvhWorld = new BvhHittable(bvh); // TODO FIX
 
 // Camera
 
@@ -36,9 +34,9 @@ var scanlinesRemaining = ImageHeight;
 
 Parallel.For(0, ImageHeight, j =>
 {
-    Error.WriteLine($"Scanlines remaining: {scanlinesRemaining}");
-    Interlocked.Decrement(ref scanlinesRemaining);
-
+    var writeScanlines = Interlocked.Decrement(ref scanlinesRemaining) + 1;
+    Error.WriteLine($"Scanlines remaining: {writeScanlines}");
+    
     var pixY = ImageHeight - 1 - j;
     var dataY = j;
 
@@ -117,7 +115,7 @@ void SetPixel(int[] image, int x, int y, Vec3 pixelColor)
     image[i] = d;
 }
 
-HittableList RandomScene()
+Hittable RandomScene()
 {
     var world = new HittableList();
 
@@ -166,5 +164,13 @@ HittableList RandomScene()
     var material3 = new Metal(C3(0.7, 0.6, 0.5), 0.0);
     world.Add(new Sphere(P3(4, 1, 0), 1, material3));
 
+#if false
     return world;
+#else
+
+    var bvh = BvhHelper.CreateBvh(world.List);
+    var bvhWorld = new BvhHittable(bvh);
+
+    return bvhWorld;
+#endif
 }
