@@ -3,6 +3,8 @@ global using static RTI1W.Helpers;
 global using static System.Console;
 global using static System.Math;
 
+Metrics.Activate();
+
 // Image
 
 const double AspectRatio = 3.0 / 2.0;

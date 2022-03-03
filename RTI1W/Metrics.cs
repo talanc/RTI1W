@@ -4,18 +4,26 @@ namespace RTI1W;
 
 public static class Metrics
 {
+    private static bool active;
+    public static void Activate()
+    {
+        active = true;
+    }
+
     private static readonly Stopwatch stopwatch = Stopwatch.StartNew();
     private static readonly List<MetricTime> metricTimers = new();
 
     private static int numRaySphere = 0;
     public static void EventRaySphere()
     {
+        if (!active) return;
         Interlocked.Increment(ref numRaySphere);
     }
 
     private static int numRayBox = 0;
     public static void EventRayBox()
     {
+        if (!active) return;
         Interlocked.Increment(ref numRayBox);
     }
 
@@ -29,6 +37,7 @@ public static class Metrics
 
     public static void StartTimer(string name)
     {
+        if (!active) return;
         var elapsed = stopwatch.Elapsed;
         MetricTime metric = new()
         {
@@ -41,11 +50,13 @@ public static class Metrics
 
     public static void StopTimer()
     {
+        if (!active) return;
         metricTimers.Last().Stop = stopwatch.Elapsed;
     }
 
     public static void Display()
     {
+        if (!active) return;
         Error.WriteLine("Events:");
         Error.WriteLine($"- Ray-Sphere: {numRaySphere:N0}");
         Error.WriteLine($"- Ray-Box: {numRayBox:N0}");
