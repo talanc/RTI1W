@@ -55,6 +55,7 @@ public class BvhHittable : Hittable
         }
 
         // Ignore if no intersection
+        Metrics.EventRayBox();
         if (!IntersectRayBox(r, node.Bounds, tMin, tMax))
         {
             return null;
@@ -213,6 +214,8 @@ public class Sphere : Hittable
 
     public override HitRecord? Hit(Ray r, double tMin, double tMax)
     {
+        Metrics.EventRaySphere();
+
         var oc = r.Origin - Center;
         var a = r.Direction.LengthSquared;
         var halfB = Dot(oc, r.Direction);

@@ -3,8 +3,6 @@ global using static RTI1W.Helpers;
 global using static System.Console;
 global using static System.Math;
 
-var timer = System.Diagnostics.Stopwatch.StartNew();
-
 // Image
 
 const double AspectRatio = 3.0 / 2.0;
@@ -29,6 +27,8 @@ var camera = new Camera(lookFrom, lookAt, vUp, 20, AspectRatio, aperture, distTo
 // Render
 
 var image = new int[ImageWidth * ImageHeight];
+
+Metrics.StartTimer("Render");
 
 var scanlinesRemaining = ImageHeight;
 
@@ -58,9 +58,12 @@ Parallel.For(0, ImageHeight, j =>
     }
 });
 
+Metrics.StopTimer();
+Metrics.StartTimer("Save");
+
 // Write PPM/P3 file
 WriteLine("P3");
-WriteLine($"{ImageWidth} {ImageHeight}");
+Write(ImageWidth); Write(' '); WriteLine(ImageHeight);
 WriteLine("255");
 for (var i = 0; i < image.Length; i++)
 {
@@ -68,10 +71,12 @@ for (var i = 0; i < image.Length; i++)
     var r = (d >> 16) & 0xFF;
     var g = (d >> 8) & 0xFF;
     var b = (d >> 0) & 0xFF;
-    WriteLine($"{r} {g} {b}");
+    Write(r); Write(' '); Write(g); Write(' '); WriteLine(b);
 }
 
-Error.WriteLine($"Done. ({timer.Elapsed.TotalSeconds:F2} secs)");
+Metrics.StopTimer();
+
+Metrics.Display();
 
 Vec3 RayColor(Ray r, int depth)
 {
