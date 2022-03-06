@@ -34,7 +34,11 @@ Metrics.StartTimer("Render");
 
 var scanlinesRemaining = ImageHeight;
 
-Parallel.For(0, ImageHeight, j =>
+var parallelOpts = new ParallelOptions()
+{
+};
+
+Parallel.For(0, ImageHeight, parallelOpts, j =>
 {
     var writeScanlines = Interlocked.Decrement(ref scanlinesRemaining) + 1;
     Error.WriteLine($"Scanlines remaining: {writeScanlines}");

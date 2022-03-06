@@ -66,20 +66,34 @@ public class BvhHittable : Hittable
             return node.Item.Hit(r, tMin, tMax);
         }
 
-        var hitA = NodeHit(node.A, r, tMin, tMax);
-        var closestSoFar = hitA?.T ?? tMax;
-        var hitB = NodeHit(node.B, r, tMin, closestSoFar);
+        var hasA = false;
+        var hasB = false;
 
-        if (hitA.HasValue && hitB.HasValue)
+        var closestSoFar = tMax;
+
+        var hitA = NodeHit(node.A, r, tMin, closestSoFar);
+        if (hitA.HasValue)
         {
-            if (hitA.Value.T <= hitB.Value.T)
+            hasA = true;
+            closestSoFar = hitA.Value.T;
+        }
+
+        var hitB = NodeHit(node.B, r, tMin, closestSoFar);
+        if (hitB.HasValue)
+        {
+            hasB = true;
+        }
+
+        if (hasA && hasB)
+        {
+            if (hitA!.Value.T <= hitB!.Value.T)
             {
                 return hitA;
             }
             return hitB;
         }
 
-        return hitA ?? hitB ?? null;
+        return hasA ? hitA : (hasB ? hitB : null);
     }
 }
 
