@@ -21,43 +21,86 @@ public struct HitRecord
     }
 }
 
+// TODO merge with BvhHittable
+public class BvhNode
+{
+    public Box3 Bounds;
+    public BvhNode? A, B;   // TODO change type from BvhNode? to Hittable?
+    public Hittable? Item;  // TODO remove
+}
+
 public class BvhHittable : Hittable
 {
-    private readonly Box3 bounds;
-    private readonly Hittable left;
-    private readonly Hittable right;
+    private readonly BvhNode root;
 
-    public BvhHittable(Box3 bounds, Hittable left, Hittable right)
+    public BvhHittable(BvhNode root)
     {
-        this.bounds = bounds;
-        this.left = left;
-        this.right = right;
+        this.root = root;
     }
 
     public override Box3 GetBoundingBox()
     {
-        return bounds;
+        return root.Bounds;
     }
 
     public override HitRecord? Hit(Ray r, double tMin, double tMax)
     {
-        // Ignore if no intersection
-        Metrics.EventRayBox();
-        if (!IntersectRayBox(r, bounds, tMin, tMax))
+        return NodeHit(root, r, tMin, tMax);
+    }
+
+    public HitRecord? NodeHit(BvhNode? node, Ray r, double tMin, double tMax)
+    {
+        if (node == null)
         {
             return null;
         }
 
-        var hitLeft = left.Hit(r, tMin, tMax);
-        var hitRight = right.Hit(r, tMin, hitLeft?.T ?? tMax);
+        // Ignore if no intersection
+        Metrics.EventRayBox();
+        if (!IntersectRayBox(r, node.Bounds, tMin, tMax))
+        {
+            return null;
+        }
 
-        return hitRight ?? hitLeft;
+        if (node.Item != null)
+        {
+            return node.Item.Hit(r, tMin, tMax);
+        }
+
+        var hasA = false;
+        var hasB = false;
+
+        var closestSoFar = tMax;
+
+        var hitA = NodeHit(node.A, r, tMin, closestSoFar);
+        if (hitA.HasValue)
+        {
+            hasA = true;
+            closestSoFar = hitA.Value.T;
+        }
+
+        var hitB = NodeHit(node.B, r, tMin, closestSoFar);
+        if (hitB.HasValue)
+        {
+            hasB = true;
+        }
+
+        if (hasA && hasB)
+        {
+            if (hitA!.Value.T <= hitB!.Value.T)
+            {
+                return hitA;
+            }
+            return hitB;
+        }
+
+        return hasA ? hitA : (hasB ? hitB : null);
     }
 }
 
 public class BvhHelper
 {
-    public static BvhHittable CreateBvh(List<Hittable> hittables)
+    public static BvhNode CreateBvh(List<Hittable> hittables)
     {
         var hittableBoxArr = new (Hittable, Box3)[hittables.Count];
         for (var i = 0; i < hittableBoxArr.Length; i++)
@@ -69,11 +112,21 @@ public class BvhHelper
         return CreateBvh(span);
     }
 
-    private static BvhHittable CreateBvh(Span<(Hittable, Box3)> span)
+    private static BvhNode CreateBvh(Span<(Hittable, Box3)> span)
     {
         if (span.Length == 0)
         {
             throw new ArgumentException("span is empty", nameof(span));
+        }
+
+        if (span.Length == 1)
+        {
+            var item = span[0];
+            return new BvhNode()
+            {
+                Bounds = item.Item2,
+                Item = item.Item1
+            };
         }
 
         var box = span[0].Item2;
@@ -82,14 +135,24 @@ public class BvhHelper
             box = Box3.Union(box, span[i].Item2);
         }
 
-        if (span.Length == 1)
-        {
-            return new BvhHittable(box, span[0].Item1, span[0].Item1);
-        }
-
         if (span.Length == 2)
         {
-            return new BvhHittable(box, span[0].Item1, span[1].Item1);
+            var item1 = span[0];
+            var item2 = span[1];
+            return new BvhNode()
+            {
+                Bounds = box,
+                A = new BvhNode()
+                {
+                    Bounds = item1.Item2,
+                    Item = item1.Item1
+                },
+                B = new BvhNode()
+                {
+                    Bounds = item2.Item2,
+                    Item = item2.Item1
+                }
+            };
         }
 
         var size = box.GetSize();
@@ -111,7 +174,12 @@ public class BvhHelper
 
         var partition1 = span.Slice(0, size1);
         var partition2 = span.Slice(size1, size2);
-        return new BvhHittable(box, CreateBvh(partition1), CreateBvh(partition2));
+        return new BvhNode()
+        {
+            Bounds = box,
+            A = CreateBvh(partition1),
+            B = CreateBvh(partition2)
+        };
     }
 }
 
