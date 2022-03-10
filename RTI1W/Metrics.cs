@@ -13,14 +13,14 @@ public static class Metrics
     private static readonly Stopwatch stopwatch = Stopwatch.StartNew();
     private static readonly List<MetricTime> metricTimers = new();
 
-    private static int numRaySphere = 0;
+    private static long numRaySphere = 0;
     public static void EventRaySphere()
     {
         if (!active) return;
         Interlocked.Increment(ref numRaySphere);
     }
 
-    private static int numRayBox = 0;
+    private static long numRayBox = 0;
     public static void EventRayBox()
     {
         if (!active) return;
