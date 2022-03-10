@@ -34,10 +34,7 @@ Metrics.StartTimer("Render");
 
 var scanlinesRemaining = ImageHeight;
 
-var parallelOpts = new ParallelOptions()
-{
-};
-
+var parallelOpts = new ParallelOptions();
 Parallel.For(0, ImageHeight, parallelOpts, j =>
 {
     var writeScanlines = Interlocked.Decrement(ref scanlinesRemaining) + 1;
@@ -179,9 +176,8 @@ Hittable RandomScene()
     return world;
 #else
 
-    var bvh = BvhHelper.CreateBvh(world.List);
-    var bvhWorld = new BvhHittable(bvh);
+    var bvhHittable = BvhHelper.CreateBvh(world.List);
 
-    return bvhWorld;
+    return bvhHittable;
 #endif
 }
