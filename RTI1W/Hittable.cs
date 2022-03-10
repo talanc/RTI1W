@@ -21,11 +21,12 @@ public struct HitRecord
     }
 }
 
+// TODO merge with BvhHittable
 public class BvhNode
 {
     public Box3 Bounds;
-    public BvhNode? A, B;
-    public Hittable? Item;
+    public BvhNode? A, B;   // TODO change type from BvhNode? to Hittable?
+    public Hittable? Item;  // TODO remove
 }
 
 public class BvhHittable : Hittable
@@ -101,43 +102,55 @@ public class BvhHelper
 {
     public static BvhNode CreateBvh(List<Hittable> hittables)
     {
-        if (hittables.Count == 0)
+        var hittableBoxArr = new (Hittable, Box3)[hittables.Count];
+        for (var i = 0; i < hittableBoxArr.Length; i++)
         {
-            throw new InvalidOperationException();
+            hittableBoxArr[i] = (hittables[i], hittables[i].GetBoundingBox());
         }
 
-        var box = hittables[0].GetBoundingBox();
-        for (var i = 1; i < hittables.Count; i++)
+        var span = hittableBoxArr.AsSpan();
+        return CreateBvh(span);
+    }
+
+    private static BvhNode CreateBvh(Span<(Hittable, Box3)> span)
+    {
+        if (span.Length == 0)
         {
-            box = Box3.Union(box, hittables[i].GetBoundingBox());
+            throw new ArgumentException("span is empty", nameof(span));
         }
 
-        if (hittables.Count == 1)
+        if (span.Length == 1)
         {
-            var item = hittables[0];
+            var item = span[0];
             return new BvhNode()
             {
-                Bounds = box,
-                Item = item
+                Bounds = item.Item2,
+                Item = item.Item1
             };
         }
 
-        if (hittables.Count == 2)
+        var box = span[0].Item2;
+        for (var i = 1; i < span.Length; i++)
         {
-            var item1 = hittables[0];
-            var item2 = hittables[1];
+            box = Box3.Union(box, span[i].Item2);
+        }
+
+        if (span.Length == 2)
+        {
+            var item1 = span[0];
+            var item2 = span[1];
             return new BvhNode()
             {
                 Bounds = box,
                 A = new BvhNode()
                 {
-                    Bounds = item1.GetBoundingBox(),
-                    Item = item1
+                    Bounds = item1.Item2,
+                    Item = item1.Item1
                 },
                 B = new BvhNode()
                 {
-                    Bounds = item2.GetBoundingBox(),
-                    Item = item2
+                    Bounds = item2.Item2,
+                    Item = item2.Item1
                 }
             };
         }
@@ -145,22 +158,22 @@ public class BvhHelper
         var size = box.GetSize();
         if (size.X > size.Y && size.X > size.Z)
         {
-            hittables.Sort((a, b) => (int)((a.GetBoundingBox().GetMiddle().X - b.GetBoundingBox().GetMiddle().X) * 1000));
+            span.Sort((a, b) => (int)((a.Item2.GetMiddle().X - b.Item2.GetMiddle().X) * 1000));
         }
         else if (size.Y > size.Z)
         {
-            hittables.Sort((a, b) => (int)((a.GetBoundingBox().GetMiddle().Y - b.GetBoundingBox().GetMiddle().Y) * 1000));
+            span.Sort((a, b) => (int)((a.Item2.GetMiddle().Y - b.Item2.GetMiddle().Y) * 1000));
         }
         else
         {
-            hittables.Sort((a, b) => (int)((a.GetBoundingBox().GetMiddle().Z - b.GetBoundingBox().GetMiddle().Z) * 1000));
+            span.Sort((a, b) => (int)((a.Item2.GetMiddle().Z - b.Item2.GetMiddle().Z) * 1000));
         }
 
-        var size1 = hittables.Count / 2;
-        var size2 = hittables.Count - size1;
+        var size1 = span.Length / 2;
+        var size2 = span.Length - size1;
 
-        var partition1 = hittables.GetRange(0, size1);
-        var partition2 = hittables.GetRange(size1, size2);
+        var partition1 = span.Slice(0, size1);
+        var partition2 = span.Slice(size1, size2);
         return new BvhNode()
         {
             Bounds = box,
