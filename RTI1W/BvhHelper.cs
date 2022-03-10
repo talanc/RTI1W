@@ -12,7 +12,7 @@ public class BvhHelper
             hittableBoxArr[i] = new NodeInfo(hittable, bounds, bounds.GetMiddle());
         }
 
-        var span = hittableBoxArr.AsSpan();
+        var span = new Span<NodeInfo>(hittableBoxArr);
         return CreateBvh(span);
     }
 
