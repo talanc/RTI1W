@@ -59,51 +59,55 @@ public class BvhHelper
 {
     public static BvhHittable CreateBvh(List<Hittable> hittables)
     {
-        var hittableBoxArr = new (Hittable, Box3)[hittables.Count];
+        var hittableBoxArr = new NodeInfo[hittables.Count];
         for (var i = 0; i < hittableBoxArr.Length; i++)
         {
-            hittableBoxArr[i] = (hittables[i], hittables[i].GetBoundingBox());
+            var hittable = hittables[i];
+            var bounds = hittable.GetBoundingBox();
+            hittableBoxArr[i] = new NodeInfo(hittable, bounds, bounds.GetMiddle());
         }
 
         var span = hittableBoxArr.AsSpan();
         return CreateBvh(span);
     }
 
-    private static BvhHittable CreateBvh(Span<(Hittable, Box3)> span)
+    private record class NodeInfo(Hittable Hittable, Box3 Bounds, Vec3 Middle);
+
+    private static BvhHittable CreateBvh(Span<NodeInfo> span)
     {
         if (span.Length == 0)
         {
             throw new ArgumentException("span is empty", nameof(span));
         }
 
-        var box = span[0].Item2;
+        var bounds = span[0].Bounds;
         for (var i = 1; i < span.Length; i++)
         {
-            box = Box3.Union(box, span[i].Item2);
+            bounds = Box3.Union(bounds, span[i].Bounds);
         }
 
         if (span.Length == 1)
         {
-            return new BvhHittable(box, span[0].Item1, span[0].Item1);
+            return new BvhHittable(bounds, span[0].Hittable, span[0].Hittable);
         }
 
         if (span.Length == 2)
         {
-            return new BvhHittable(box, span[0].Item1, span[1].Item1);
+            return new BvhHittable(bounds, span[0].Hittable, span[1].Hittable);
         }
 
-        var size = box.GetSize();
+        var size = bounds.GetSize();
         if (size.X > size.Y && size.X > size.Z)
         {
-            span.Sort((a, b) => (int)((a.Item2.GetMiddle().X - b.Item2.GetMiddle().X) * 1000));
+            span.Sort((a, b) => (int)((a.Middle.X - b.Middle.X) * 1000));
         }
         else if (size.Y > size.Z)
         {
-            span.Sort((a, b) => (int)((a.Item2.GetMiddle().Y - b.Item2.GetMiddle().Y) * 1000));
+            span.Sort((a, b) => (int)((a.Middle.Y - b.Middle.Y) * 1000));
         }
         else
         {
-            span.Sort((a, b) => (int)((a.Item2.GetMiddle().Z - b.Item2.GetMiddle().Z) * 1000));
+            span.Sort((a, b) => (int)((a.Middle.Z - b.Middle.Z) * 1000));
         }
 
         var size1 = span.Length / 2;
@@ -111,7 +115,7 @@ public class BvhHelper
 
         var partition1 = span.Slice(0, size1);
         var partition2 = span.Slice(size1, size2);
-        return new BvhHittable(box, CreateBvh(partition1), CreateBvh(partition2));
+        return new BvhHittable(bounds, CreateBvh(partition1), CreateBvh(partition2));
     }
 }
 
