@@ -34,7 +34,10 @@ Metrics.StartTimer("Render");
 
 var scanlinesRemaining = ImageHeight;
 
-var parallelOpts = new ParallelOptions();
+var parallelOpts = new ParallelOptions()
+{
+    MaxDegreeOfParallelism = Max(1, Environment.ProcessorCount / 2)
+};
 Parallel.For(0, ImageHeight, parallelOpts, j =>
 {
     var writeScanlines = Interlocked.Decrement(ref scanlinesRemaining) + 1;
