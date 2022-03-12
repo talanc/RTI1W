@@ -16,14 +16,12 @@ public static class Metrics
     private static long numRaySphere = 0;
     public static void EventRaySphere()
     {
-        if (!active) return;
         Interlocked.Increment(ref numRaySphere);
     }
 
     private static long numRayBox = 0;
     public static void EventRayBox()
     {
-        if (!active) return;
         Interlocked.Increment(ref numRayBox);
     }
 
@@ -37,7 +35,6 @@ public static class Metrics
 
     public static void StartTimer(string name)
     {
-        if (!active) return;
         var elapsed = stopwatch.Elapsed;
         MetricTime metric = new()
         {
@@ -50,7 +47,6 @@ public static class Metrics
 
     public static void StopTimer()
     {
-        if (!active) return;
         metricTimers.Last().Stop = stopwatch.Elapsed;
     }
 
