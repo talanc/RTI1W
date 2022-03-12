@@ -8,9 +8,9 @@ Metrics.Activate();
 // Image
 
 const double AspectRatio = 3.0 / 2.0;
-const int ImageWidth = 160;
+const int ImageWidth = 200;
 const int ImageHeight = (int)(ImageWidth / AspectRatio);
-const int SamplesPerPixel = 30;
+const int SamplesPerPixel = 100;
 const int MaxDepth = 30;
 
 // World
@@ -24,7 +24,7 @@ var lookAt = P3(0, 0, 0);
 var vUp = P3(0, 1, 0);
 var distToFocus = 10.0;
 var aperture = 0.1;
-var camera = new Camera(lookFrom, lookAt, vUp, 20, AspectRatio, aperture, distToFocus);
+var camera = new Camera(lookFrom, lookAt, vUp, 20, AspectRatio, aperture, distToFocus, 0, 1);
 
 // Render
 
@@ -139,26 +139,32 @@ Hittable RandomScene()
 
             if ((center - P3(4, 0.2, 0)).Length > 0.9)
             {
-                Material mat;
                 if (chooseMat < 0.8)
                 {
                     // Diffuse
                     var albedo = RandomVec3() * RandomVec3();
-                    mat = new Lambertian(albedo);
+                    var mat = new Lambertian(albedo);
+
+                    var center2 = center + V3(0, RandomDouble(0, 0.5), 0);
+
+                    world.Add(new MovingSphere(center, center2, 0, 1, 0.2, mat));
                 }
                 else if (chooseMat < 0.95)
                 {
                     // Metal
                     var albedo = RandomVec3(0.5, 1);
                     var fuzz = RandomDouble(0, 0.5);
-                    mat = new Metal(albedo, fuzz);
+                    var mat = new Metal(albedo, fuzz);
+
+                    world.Add(new Sphere(center, 0.2, mat));
                 }
                 else
                 {
                     // Glass
-                    mat = new Dielectric(1.5);
+                    var mat = new Dielectric(1.5);
+
+                    world.Add(new Sphere(center, 0.2, mat));
                 }
-                world.Add(new Sphere(center, 0.2, mat));
             }
         }
     }

@@ -151,3 +151,76 @@ public class Sphere : Hittable
         return rec;
     }
 }
+
+public class MovingSphere : Hittable
+{
+    public Vec3 Center0, Center1;
+    public double Time0, Time1;
+    public double Radius;
+    public Material Material;
+
+    public MovingSphere(Vec3 center0, Vec3 center1, double time0, double time1, double radius, Material material)
+    {
+        Center0 = center0;
+        Center1 = center1;
+        Time0 = time0;
+        Time1 = time1;
+        Radius = radius;
+        Material = material;
+    }
+
+    public Vec3 GetCenter(double time)
+    {
+        return Center0 + ((time - Time0) / (Time1 - Time0)) * (Center1 - Center0);
+    }
+
+    public override Box3 GetBoundingBox()
+    {
+        var half = V3(Radius, Radius, Radius);
+        var box0 = new Box3(Center0 - half, Center0 + half);
+        var box1 = new Box3(Center1 - half, Center1 + half);
+        return Box3.Union(box0, box1);
+    }
+
+    public override HitRecord? Hit(Ray r, double tMin, double tMax)
+    {
+        Metrics.EventRaySphere();
+
+        var center = GetCenter(r.Time);
+
+        var oc = r.Origin - center;
+        var a = r.Direction.LengthSquared;
+        var halfB = Dot(oc, r.Direction);
+        var c = oc.LengthSquared - Radius * Radius;
+
+        var discriminant = halfB * halfB - a * c;
+        if (discriminant < 0)
+        {
+            return null;
+        }
+        var sqrtD = Sqrt(discriminant);
+
+        var root = (-halfB - sqrtD) / a;
+
+        if (root < tMin || tMax < root)
+        {
+            root = (-halfB + sqrtD) / a;
+            if (root < tMin || tMax < root)
+            {
+                return null;
+            }
+        }
+
+        var t = root;
+        var p = r.At(t);
+        var outwardNormal = (p - center) / Radius;
+        var rec = new HitRecord()
+        {
+            P = p,
+            T = t,
+            Material = Material,
+        };
+        rec.SetFaceNormal(r, outwardNormal);
+        return rec;
+    }
+}
