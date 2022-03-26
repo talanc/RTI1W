@@ -92,6 +92,82 @@ public class HittableList : Hittable
     }
 }
 
+public class Triangle : Hittable
+{
+    public readonly Vec3 P0, P1, P2;
+    public readonly Material Material;
+
+    private readonly Box3 BoundingBox;
+    private readonly Vec3 N;
+
+    public Triangle(Vec3 p0, Vec3 p1, Vec3 p2, Material material)
+    {
+        P0 = p0;
+        P1 = p1;
+        P2 = p2;
+        Material = material;
+
+        var minX = Min(Min(p0.X, p1.X), p2.X);
+        var minY = Min(Min(p0.Y, p1.Y), p2.Y);
+        var minZ = Min(Min(p0.Z, p1.Z), p2.Z);
+        var maxX = Max(Max(p0.X, p1.X), p2.X);
+        var maxY = Max(Max(p0.Y, p1.Y), p2.Y);
+        var maxZ = Max(Max(p0.Z, p1.Z), p2.Z);
+        BoundingBox = new Box3(V3(minX, minY, minZ), V3(maxX, maxY, maxZ));
+
+        N = Cross(p1 - p0, p2 - p0);
+    }
+
+    public override Box3 GetBoundingBox()
+    {
+        return BoundingBox;
+    }
+
+    public override HitRecord? Hit(Ray r, double tMin, double tMax)
+    {
+        Metrics.EventRayTriangle();
+
+        var d = -Dot(N, P0);
+
+        var n_dot_v = Dot(N, r.Direction);
+        if (IsNearZero(n_dot_v))
+        {
+            return null;
+        }
+
+        var nom = Dot(N, r.Origin) + d;
+
+        var t = -(nom / n_dot_v);
+        if (t < tMin || t > tMax)
+        {
+            return null;
+        }
+
+        var p = r.At(t);
+
+        var e0 = P1 - P0;
+        var e1 = P2 - P1;
+        var e2 = P0 - P2;
+
+        var test0 = Dot(N, Cross(e0, p - P0));
+        var test1 = Dot(N, Cross(e1, p - P1));
+        var test2 = Dot(N, Cross(e2, p - P2));
+        if (test0 < 0 || test1 < 0 || test2 < 0)
+        {
+            return null;
+        }
+
+        var rec = new HitRecord()
+        {
+            P = p,
+            T = t,
+            Material = Material,
+        };
+        rec.SetFaceNormal(r, N);
+        return rec;
+    }
+}
+
 public class Sphere : Hittable
 {
     public Vec3 Center;
