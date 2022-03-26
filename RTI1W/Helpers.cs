@@ -112,10 +112,11 @@ public static class Helpers
         return rOutPerp + rOutParallel;
     }
 
-    public static Vec3 ColorBlack => V3(0, 0, 0);
-    public static Vec3 ColorWhite => V3(1, 1, 1);
-    public static Vec3 ColorRed => V3(1, 0, 0);
-    public static Vec3 ColorBlue => V3(0, 0, 1);
+    public static Vec3 ColorBlack => C3(0, 0, 0);
+    public static Vec3 ColorWhite => C3(1, 1, 1);
+    public static Vec3 ColorRed => C3(1, 0, 0);
+    public static Vec3 ColorGreen => C3(0, 1, 0);
+    public static Vec3 ColorBlue => C3(0, 0, 1);
 
     public static double Lerp(double t, double v1, double v2)
     {
