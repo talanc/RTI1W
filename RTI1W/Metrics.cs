@@ -25,6 +25,12 @@ public static class Metrics
         Interlocked.Increment(ref numRayBox);
     }
 
+    private static long numRayTriangle = 0;
+    public static void EventRayTriangle()
+    {
+        Interlocked.Increment(ref numRayTriangle);
+    }
+
     private class MetricTime
     {
         public string Name { get; set; } = "";
@@ -56,6 +62,7 @@ public static class Metrics
         Error.WriteLine("Events:");
         Error.WriteLine($"- Ray-Sphere: {numRaySphere:N0}");
         Error.WriteLine($"- Ray-Box: {numRayBox:N0}");
+        Error.WriteLine($"- Ray-Triangle: {numRayTriangle:N0}");
         Error.WriteLine("Timers: ");
         foreach (var metric in metricTimers)
         {
