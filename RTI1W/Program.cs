@@ -68,6 +68,7 @@ Metrics.StopTimer();
 Metrics.StartTimer("Save");
 
 // Write PPM/P3 file
+Error.WriteLine("Creating image");
 WriteLine("P3");
 Write(ImageWidth); Write(' '); WriteLine(ImageHeight);
 WriteLine("255");
@@ -180,6 +181,13 @@ Hittable RandomScene()
 
     var material3 = new Metal(C3(0.7, 0.6, 0.5), 0.0);
     world.Add(new Sphere(P3(4, 1, 0), 1, material3));
+
+    // A red triangle
+    var t0 = P3(0, 1.4, 2.8);
+    var t1 = P3(3, 1.9, 2.3);
+    var t2 = P3(0, 2.2, 3);
+    var material4 = new Lambertian(ColorRed);
+    world.Add(new Triangle(t0, t1, t2, material4));
 
 #if false
     return world;
