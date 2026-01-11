@@ -37,7 +37,7 @@ public class Camera
 
     public Ray GetRay(double s, double t)
     {
-        var rd = LensRadius * RandomInUnitDisk();
+        var rd = LensRadius * RandomInUnitCircle();
         var offset = U * rd.X + V * rd.Y;
 
         var rayOrigin = Origin + offset;

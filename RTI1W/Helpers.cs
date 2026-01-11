@@ -40,12 +40,18 @@ public static class Helpers
         return deg * PI / 180;
     }
 
+    /// <summary>
+    /// Returns a value between [0.0, 1.0)
+    /// </summary>
     public static double RandomDouble()
     {
         // TODO allow predefined seed to measure performance better
         return Random.Shared.NextDouble();
     }
 
+    /// <summary>
+    /// Returns a value between [min, max)
+    /// </summary>
     public static double RandomDouble(double min, double max)
     {
         return min + (max - min) * RandomDouble();
@@ -75,18 +81,11 @@ public static class Helpers
         }
     }
 
-    public static Vec3 RandomInUnitDisk()
+    public static Vec3 RandomInUnitCircle()
     {
-        // TODO generate this better as it's resulting in too many misses
-        while (true)
-        {
-            var p = V3(RandomDouble(-1, 1), RandomDouble(-1, 1), 0);
-            if (p.LengthSquared < 1)
-            {
-                return p;
-            }
-            Metrics.EventMissRandomInUnitDisk();
-        }
+        var theta = RandomDouble(0, Tau);
+        var dist = Sqrt(RandomDouble());
+        return V3(dist * Cos(theta), dist * Sin(theta), 0);
     }
 
     public static Vec3 RandomUnitVector()

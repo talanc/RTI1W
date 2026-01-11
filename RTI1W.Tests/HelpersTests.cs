@@ -1,4 +1,5 @@
 global using static RTI1W.Helpers;
+global using static System.Math;
 
 [assembly: Parallelize]
 
@@ -35,5 +36,47 @@ public class HelpersTests
         var y = double.Parse(d[1].Trim());
         var z = double.Parse(d[2].Trim());
         return V3(x, y, z);
+    }
+
+    [TestMethod]
+    public void TestRandomInUnitCircle()
+    {
+        for (var i = 0; i < 1_000_000; i++)
+        {
+            // Arrange
+
+            // Act
+            var item = RandomInUnitCircle();
+
+            // Assert
+            Assert.IsLessThan(1, item.LengthSquared);
+        }
+    }
+
+    [TestMethod]
+    public void TestRandomInUnitCircleDistribution()
+    {
+        const int n = 1000000;
+        double sumX = 0, sumY = 0, sumX2 = 0, sumY2 = 0;
+        for (int i = 0; i < n; i++)
+        {
+            var p = RandomInUnitCircle();
+            sumX += p.X;
+            sumY += p.Y;
+            sumX2 += p.X * p.X;
+            sumY2 += p.Y * p.Y;
+        }
+        double meanX = sumX / n;
+        double meanY = sumY / n;
+        double varX = sumX2 / n - meanX * meanX;
+        double varY = sumY2 / n - meanY * meanY;
+
+        // Check means are close to 0
+        Assert.IsLessThan(0.01, Abs(meanX));
+        Assert.IsLessThan(0.01, Abs(meanY));
+
+        // Check variances are close to 1/4
+        Assert.IsLessThan(0.01, Abs(varX - 0.25));
+        Assert.IsLessThan(0.01, Abs(varY - 0.25));
     }
 }
