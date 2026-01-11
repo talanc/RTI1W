@@ -135,22 +135,13 @@ public static class Helpers
 
     public static bool IntersectRayBox(Ray ray, Box3 box, double tMin, double tMax)
     {
-        var invDirX = 1 / ray.Direction.X;
-        var invDirY = 1 / ray.Direction.Y;
-        var invDirZ = 1 / ray.Direction.Z;
+        var t0v = box.Min - ray.Origin;
+        var t1v = box.Max - ray.Origin;
 
-        var t0x = (box.Min.X - ray.Origin.X) * invDirX;
-        var t0y = (box.Min.Y - ray.Origin.Y) * invDirY;
-        var t0z = (box.Min.Z - ray.Origin.Z) * invDirZ;
-
-        var t1x = (box.Max.X - ray.Origin.X) * invDirX;
-        var t1y = (box.Max.Y - ray.Origin.Y) * invDirY;
-        var t1z = (box.Max.Z - ray.Origin.Z) * invDirZ;
-
+        var invDirX = ray.InvDirection.X;
+        var t0x = t0v.X * invDirX;
+        var t1x = t1v.X * invDirX;
         if (invDirX < 0) (t0x, t1x) = (t1x, t0x);
-        if (invDirY < 0) (t0y, t1y) = (t1y, t0y);
-        if (invDirZ < 0) (t0z, t1z) = (t1z, t0z);
-
         tMin = t0x > tMin ? t0x : tMin;
         tMax = t1x < tMax ? t1x : tMax;
         if (tMax <= tMin)
@@ -158,6 +149,10 @@ public static class Helpers
             return false;
         }
 
+        var invDirY = ray.InvDirection.Y;
+        var t0y = t0v.Y * invDirY;
+        var t1y = t1v.Y * invDirY;
+        if (invDirY < 0) (t0y, t1y) = (t1y, t0y);
         tMin = t0y > tMin ? t0y : tMin;
         tMax = t1y < tMax ? t1y : tMax;
         if (tMax <= tMin)
@@ -165,6 +160,10 @@ public static class Helpers
             return false;
         }
 
+        var invDirZ = ray.InvDirection.Z;
+        var t0z = t0v.Z * invDirZ;
+        var t1z = t1v.Z * invDirZ;
+        if (invDirZ < 0) (t0z, t1z) = (t1z, t0z);
         tMin = t0z > tMin ? t0z : tMin;
         tMax = t1z < tMax ? t1z : tMax;
         if (tMax <= tMin)
