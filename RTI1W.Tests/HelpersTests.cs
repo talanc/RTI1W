@@ -32,10 +32,12 @@ public class HelpersTests
 
     private static Vec3 ParseVec3(string s)
     {
-        var d = s.Split(',', StringSplitOptions.TrimEntries);
-        var x = double.Parse(d[0]);
-        var y = double.Parse(d[1]);
-        var z = double.Parse(d[2]);
+        var span = s.AsSpan();
+        Span<Range> ranges = stackalloc Range[3];
+        span.Split(ranges, ",", StringSplitOptions.TrimEntries);
+        var x = double.Parse(span[ranges[0]]);
+        var y = double.Parse(span[ranges[1]]);
+        var z = double.Parse(span[ranges[2]]);
         return V3(x, y, z);
     }
 
