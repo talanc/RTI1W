@@ -30,13 +30,6 @@ public static class Metrics
         Interlocked.Increment(ref numRayTriangle);
     }
 
-    private static long numMissRandomInUnitSphere = 0;
-    public static void EventMissRandomInUnitSphere()
-    {
-        if (!IsActive) return;
-        Interlocked.Increment(ref numMissRandomInUnitSphere);
-    }
-
     private class MetricTime
     {
         public required string Name { get; set; }
@@ -71,7 +64,6 @@ public static class Metrics
         Error.WriteLine($"- Ray-Sphere: {numRaySphere:N0}");
         Error.WriteLine($"- Ray-Box: {numRayBox:N0}");
         Error.WriteLine($"- Ray-Triangle: {numRayTriangle:N0}");
-        Error.WriteLine($"- Miss-RandomInUnitSphere: {numMissRandomInUnitSphere:N0}");
         Error.WriteLine("Timers: ");
         foreach (var metric in metricTimers)
         {

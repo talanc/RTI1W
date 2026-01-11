@@ -69,16 +69,11 @@ public static class Helpers
 
     public static Vec3 RandomInUnitSphere()
     {
-        // TODO generate this better as it's resulting in too many misses
-        while (true)
-        {
-            var p = RandomVec3(-1, 1);
-            if (p.LengthSquared < 1)
-            {
-                return p;
-            }
-            Metrics.EventMissRandomInUnitSphere();
-        }
+        var r = Pow(RandomDouble(), 1.0 / 3.0);
+        var theta = RandomDouble(0, Tau);
+        var phi = Acos(2 * RandomDouble() - 1);
+        var sinPhi = Sin(phi);
+        return V3(r * sinPhi * Cos(theta), r * sinPhi * Sin(theta), r * Cos(phi));
     }
 
     public static Vec3 RandomInUnitCircle()
@@ -90,7 +85,7 @@ public static class Helpers
 
     public static Vec3 RandomUnitVector()
     {
-        return UnitVector(RandomInUnitSphere());
+        return UnitVector(RandomVec3());
     }
 
     public static Vec3 RandomInHemisphere(Vec3 normal)

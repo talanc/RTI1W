@@ -1,5 +1,6 @@
 global using static RTI1W.Helpers;
 global using static System.Math;
+using System;
 
 [assembly: Parallelize]
 
@@ -31,10 +32,10 @@ public class HelpersTests
 
     private static Vec3 ParseVec3(string s)
     {
-        var d = s.Split(',');
-        var x = double.Parse(d[0].Trim());
-        var y = double.Parse(d[1].Trim());
-        var z = double.Parse(d[2].Trim());
+        var d = s.Split(',', StringSplitOptions.TrimEntries);
+        var x = double.Parse(d[0]);
+        var y = double.Parse(d[1]);
+        var z = double.Parse(d[2]);
         return V3(x, y, z);
     }
 
@@ -56,9 +57,9 @@ public class HelpersTests
     [TestMethod]
     public void TestRandomInUnitCircleDistribution()
     {
-        const int n = 1000000;
+        const int N = 1_000_000;
         double sumX = 0, sumY = 0, sumX2 = 0, sumY2 = 0;
-        for (int i = 0; i < n; i++)
+        for (int i = 0; i < N; i++)
         {
             var p = RandomInUnitCircle();
             sumX += p.X;
@@ -66,10 +67,10 @@ public class HelpersTests
             sumX2 += p.X * p.X;
             sumY2 += p.Y * p.Y;
         }
-        double meanX = sumX / n;
-        double meanY = sumY / n;
-        double varX = sumX2 / n - meanX * meanX;
-        double varY = sumY2 / n - meanY * meanY;
+        double meanX = sumX / N;
+        double meanY = sumY / N;
+        double varX = sumX2 / N - meanX * meanX;
+        double varY = sumY2 / N - meanY * meanY;
 
         // Check means are close to 0
         Assert.IsLessThan(0.01, Abs(meanX));
@@ -78,5 +79,53 @@ public class HelpersTests
         // Check variances are close to 1/4
         Assert.IsLessThan(0.01, Abs(varX - 0.25));
         Assert.IsLessThan(0.01, Abs(varY - 0.25));
+    }
+
+    [TestMethod]
+    public void TestRandomInUnitSphere()
+    {
+        for (var i = 0; i < 1_000_000; i++)
+        {
+            // Arrange
+
+            // Act
+            var item = RandomInUnitSphere();
+
+            // Assert
+            Assert.IsLessThan(1, item.LengthSquared);
+        }
+    }
+
+    [TestMethod]
+    public void TestRandomInUnitSphereDistribution()
+    {
+        const int N = 1_000_000;
+        double sumX = 0, sumY = 0, sumZ = 0, sumX2 = 0, sumY2 = 0, sumZ2 = 0;
+        for (int i = 0; i < N; i++)
+        {
+            var p = RandomInUnitSphere();
+            sumX += p.X;
+            sumY += p.Y;
+            sumZ += p.Z;
+            sumX2 += p.X * p.X;
+            sumY2 += p.Y * p.Y;
+            sumZ2 += p.Z * p.Z;
+        }
+        double meanX = sumX / N;
+        double meanY = sumY / N;
+        double meanZ = sumZ / N;
+        double varX = sumX2 / N - meanX * meanX;
+        double varY = sumY2 / N - meanY * meanY;
+        double varZ = sumZ2 / N - meanZ * meanZ;
+
+        // Check means are close to 0
+        Assert.IsLessThan(0.01, Abs(meanX));
+        Assert.IsLessThan(0.01, Abs(meanY));
+        Assert.IsLessThan(0.01, Abs(meanZ));
+
+        // Check variances are close to 1/5
+        Assert.IsLessThan(0.01, Abs(varX - 0.2));
+        Assert.IsLessThan(0.01, Abs(varY - 0.2));
+        Assert.IsLessThan(0.01, Abs(varZ - 0.2));
     }
 }
