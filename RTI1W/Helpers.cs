@@ -69,6 +69,7 @@ public static class Helpers
             {
                 return p;
             }
+            Metrics.EventMissRandomInUnitSphere();
         }
     }
 
@@ -81,6 +82,7 @@ public static class Helpers
             {
                 return p;
             }
+            Metrics.EventMissRandomInUnitDisk();
         }
     }
 

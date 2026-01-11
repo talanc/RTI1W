@@ -4,43 +4,57 @@ namespace RTI1W;
 
 public static class Metrics
 {
-    private static bool active;
-    public static void Activate()
-    {
-        active = true;
-    }
-
     private static readonly Stopwatch stopwatch = Stopwatch.StartNew();
-    private static readonly List<MetricTime> metricTimers = new();
+    private static readonly List<MetricTime> metricTimers = [];
+
+    public static bool IsActive { get; set; }
 
     private static long numRaySphere = 0;
     public static void EventRaySphere()
     {
+        if (!IsActive) return;
         Interlocked.Increment(ref numRaySphere);
     }
 
     private static long numRayBox = 0;
     public static void EventRayBox()
     {
+        if (!IsActive) return;
         Interlocked.Increment(ref numRayBox);
     }
 
     private static long numRayTriangle = 0;
     public static void EventRayTriangle()
     {
+        if (!IsActive) return;
         Interlocked.Increment(ref numRayTriangle);
+    }
+
+    private static long numMissRandomInUnitSphere = 0;
+    public static void EventMissRandomInUnitSphere()
+    {
+        if (!IsActive) return;
+        Interlocked.Increment(ref numMissRandomInUnitSphere);
+    }
+
+    private static long numMissRandomInUnitDisk = 0;
+    public static void EventMissRandomInUnitDisk()
+    {
+        if (!IsActive) return;
+        Interlocked.Increment(ref numMissRandomInUnitDisk);
     }
 
     private class MetricTime
     {
-        public string Name { get; set; } = "";
-        public TimeSpan Start { get; set; }
-        public TimeSpan Stop { get; set; }
+        public required string Name { get; set; }
+        public required TimeSpan Start { get; set; }
+        public required TimeSpan Stop { get; set; }
         public TimeSpan Elapsed => Stop - Start;
     }
 
     public static void StartTimer(string name)
     {
+        if (!IsActive) return;
         var elapsed = stopwatch.Elapsed;
         MetricTime metric = new()
         {
@@ -53,16 +67,19 @@ public static class Metrics
 
     public static void StopTimer()
     {
+        if (!IsActive) return;
         metricTimers.Last().Stop = stopwatch.Elapsed;
     }
 
     public static void Display()
     {
-        if (!active) return;
+        if (!IsActive) return;
         Error.WriteLine("Events:");
         Error.WriteLine($"- Ray-Sphere: {numRaySphere:N0}");
         Error.WriteLine($"- Ray-Box: {numRayBox:N0}");
         Error.WriteLine($"- Ray-Triangle: {numRayTriangle:N0}");
+        Error.WriteLine($"- Miss-RandomInUnitSphere: {numMissRandomInUnitSphere:N0}");
+        Error.WriteLine($"- Miss-RandomInUnitDisk: {numMissRandomInUnitDisk:N0}");
         Error.WriteLine("Timers: ");
         foreach (var metric in metricTimers)
         {

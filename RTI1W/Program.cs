@@ -3,12 +3,14 @@ global using static RTI1W.Helpers;
 global using static System.Console;
 global using static System.Math;
 
-Metrics.Activate();
+bool useBVH = true;
+
+Metrics.IsActive = true;
 
 // Image
 
 const double AspectRatio = 3.0 / 2.0;
-const int ImageWidth = 200;
+const int ImageWidth = 192;
 const int ImageHeight = (int)(ImageWidth / AspectRatio);
 const int SamplesPerPixel = 100;
 const int MaxDepth = 30;
@@ -30,18 +32,59 @@ var camera = new Camera(lookFrom, lookAt, vUp, 20, AspectRatio, aperture, distTo
 
 var image = new int[ImageWidth * ImageHeight];
 
-Metrics.StartTimer("Render");
+var lineIds = new int[ImageHeight];
 
 var scanlinesRemaining = ImageHeight;
 
-var parallelOpts = new ParallelOptions()
+Metrics.StartTimer("Render");
+
+var runMode = RunMode.Sequential;
+
+if (runMode == RunMode.Sequential)
 {
-    MaxDegreeOfParallelism = Max(1, Environment.ProcessorCount / 2)
-};
-Parallel.For(0, ImageHeight, parallelOpts, j =>
+    for (var i = 0; i < ImageHeight; i += 1)
+    {
+        Scanline(i);
+    }
+}
+else if (runMode == RunMode.ParallelFor)
 {
-    var writeScanlines = Interlocked.Decrement(ref scanlinesRemaining) + 1;
-    Error.WriteLine($"Scanlines remaining: {writeScanlines}");
+    var parallelOpts = new ParallelOptions()
+    {
+    };
+    Parallel.For(0, ImageHeight, parallelOpts, Scanline);
+}
+else if (runMode == RunMode.Tasks)
+{
+    var n = 1;
+    var tasks = new Task[n];
+    for (var i = 0; i < n; i++)
+    {
+        var localIdx = i;
+        tasks[localIdx] = Task.Run(() =>
+        {
+            for (var j = localIdx; j < ImageHeight; j += n)
+            {
+                Scanline(j);
+            }
+        });
+    }
+    Task.WaitAll(tasks);
+}
+else
+{
+    throw new InvalidOperationException();
+}
+
+void Scanline(int j)
+{
+    if (Metrics.IsActive)
+    {
+        var id = lineIds[j] = Environment.CurrentManagedThreadId;
+        var numLeft = Interlocked.Decrement(ref scanlinesRemaining);
+        var errStr = $"Id={id,-4}Elem={j,-5}NumLeft={numLeft}";
+        Error.WriteLine(errStr);
+    }
     
     var pixY = ImageHeight - 1 - j;
     var dataY = j;
@@ -62,7 +105,7 @@ Parallel.For(0, ImageHeight, parallelOpts, j =>
 
         SetPixel(image, dataX, dataY, pixelColor);
     }
-});
+};
 
 Metrics.StopTimer();
 Metrics.StartTimer("Save");
@@ -84,6 +127,12 @@ for (var i = 0; i < image.Length; i++)
 Metrics.StopTimer();
 
 Metrics.Display();
+
+Error.WriteLine($"Scanlines:");
+foreach (var lineId in lineIds.GroupBy(curr => curr))
+{
+    Error.WriteLine($"- {lineId.Key}: {lineId.Count()}");
+}
 
 Vec3 RayColor(Ray r, int depth)
 {
@@ -189,12 +238,20 @@ Hittable RandomScene()
     var material4 = new Lambertian(ColorRed);
     world.Add(new Triangle(t0, t1, t2, material4));
 
-#if false
-    return world;
-#else
+    if (useBVH)
+    {
+        var bvhHittable = BvhHelper.CreateBvh(world.List);
+        return bvhHittable;
+    }
+    else
+    {
+        return world;
+    }
+}
 
-    var bvhHittable = BvhHelper.CreateBvh(world.List);
-
-    return bvhHittable;
-#endif
+enum RunMode
+{
+    Sequential,
+    Tasks,
+    ParallelFor
 }

@@ -1,11 +1,13 @@
 global using static RTI1W.Helpers;
 
+[assembly: Parallelize]
+
 namespace RTI1W.Tests;
 
 [TestClass]
 public class HelpersTests
 {
-    [DataTestMethod]
+    [TestMethod]
     [DataRow(true, "0,0,3", "1,1,0")]
     [DataRow(true, "0,0,3.1", "1,1,0")]
     [DataRow(true, "0,0,4", "1,1,0")]
