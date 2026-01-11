@@ -42,6 +42,7 @@ public static class Helpers
 
     public static double RandomDouble()
     {
+        // TODO allow predefined seed to measure performance better
         return Random.Shared.NextDouble();
     }
 
@@ -62,6 +63,7 @@ public static class Helpers
 
     public static Vec3 RandomInUnitSphere()
     {
+        // TODO generate this better as it's resulting in too many misses
         while (true)
         {
             var p = RandomVec3(-1, 1);
@@ -75,6 +77,7 @@ public static class Helpers
 
     public static Vec3 RandomInUnitDisk()
     {
+        // TODO generate this better as it's resulting in too many misses
         while (true)
         {
             var p = V3(RandomDouble(-1, 1), RandomDouble(-1, 1), 0);
