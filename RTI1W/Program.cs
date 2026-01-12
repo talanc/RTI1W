@@ -253,5 +253,12 @@ enum RunMode
 {
     Sequential,
     Tasks,
-    ParallelFor
+    ParallelFor,
+}
+
+enum MetricsMode
+{
+    None,
+    Summary,
+    All,
 }

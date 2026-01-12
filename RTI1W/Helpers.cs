@@ -40,13 +40,15 @@ public static class Helpers
         return deg * PI / 180;
     }
 
+    // Useful for deterministic testing...
+    public static Random? RandomDeterministic { get; set; }
+
     /// <summary>
     /// Returns a value between [0.0, 1.0)
     /// </summary>
     public static double RandomDouble()
     {
-        // TODO allow predefined seed to measure performance better
-        return Random.Shared.NextDouble();
+        return (RandomDeterministic ?? Random.Shared).NextDouble();
     }
 
     /// <summary>
