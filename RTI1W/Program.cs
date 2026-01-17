@@ -35,8 +35,10 @@ var optNoMetrics = addOption("--no-metrics", "Do not show progress and metrics",
 
 var parseResult = rootCommand.Parse(args);
 
+var systemOptions = new[] { "-?", "-h", "--help", "--version" };
+
 if (parseResult.Errors.Count > 0 ||
-    parseResult.Tokens.Any(curr => curr.Value == "-h" || curr.Value == "--help"))
+    parseResult.Tokens.Any(curr => systemOptions.Contains(curr.Value)))
 {
     return parseResult.Invoke();
 }
