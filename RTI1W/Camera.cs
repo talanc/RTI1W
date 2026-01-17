@@ -10,10 +10,8 @@ public class Camera
     public Vec3 V;
     public Vec3 W;
     public double LensRadius;
-    public double Time0;
-    public double Time1;
 
-    public Camera(Vec3 lookFrom, Vec3 lookAt, Vec3 vUp, double vFov, double aspectRatio, double aperture, double focusDist, double time0, double time1)
+    public Camera(Vec3 lookFrom, Vec3 lookAt, Vec3 vUp, double vFov, double aspectRatio, double aperture, double focusDist)
     {
         var theta = DegreesToRadians(vFov);
         var h = Tan(theta / 2);
@@ -30,9 +28,6 @@ public class Camera
         LowerLeftCorner = Origin - Horizontal / 2 - Vertical / 2 - focusDist * W;
 
         LensRadius = aperture / 2;
-
-        Time0 = time0;
-        Time1 = time1;
     }
 
     public Ray GetRay(double s, double t)
@@ -42,8 +37,7 @@ public class Camera
 
         var rayOrigin = Origin + offset;
         var rayDirection = LowerLeftCorner + s * Horizontal + t * Vertical - Origin - offset;
-        var rayTime = RandomDouble(Time0, Time1);
 
-        return new Ray(rayOrigin, rayDirection, rayTime);
+        return new Ray(rayOrigin, rayDirection);
     }
 }

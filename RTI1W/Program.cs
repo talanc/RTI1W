@@ -67,7 +67,7 @@ var lookAt = P3(0, 0, 0);
 var vUp = P3(0, 1, 0);
 var distToFocus = 10.0;
 var aperture = 0.1;
-var camera = new Camera(lookFrom, lookAt, vUp, 20, aspectRatio, aperture, distToFocus, 0, 1);
+var camera = new Camera(lookFrom, lookAt, vUp, 20, aspectRatio, aperture, distToFocus);
 
 //
 // Render
@@ -251,9 +251,7 @@ Hittable RandomScene()
                     var albedo = RandomVec3() * RandomVec3();
                     var mat = new Lambertian(albedo);
 
-                    var center2 = center + V3(0, RandomDouble(0, 0.5), 0);
-
-                    world.Add(new MovingSphere(center, center2, 0, 1, 0.2, mat));
+                    world.Add(new Sphere(center, 0.2, mat));
                 }
                 else if (chooseMat < 0.95)
                 {

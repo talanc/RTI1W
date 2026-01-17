@@ -31,7 +31,7 @@ public class Lambertian : Material
 
         return new ScatterRecord()
         {
-            Scattered = new Ray(rec.P, scatterDirection, rayIn.Time),
+            Scattered = new Ray(rec.P, scatterDirection),
             Attenuation = Albedo
         };
     }
@@ -53,7 +53,7 @@ public class Metal : Material
         var reflected = Reflect(UnitVector(rayIn.Direction), rec.Normal);
         return new ScatterRecord()
         {
-            Scattered = new Ray(rec.P, reflected + Fuzz * RandomInUnitSphere(), rayIn.Time),
+            Scattered = new Ray(rec.P, reflected + Fuzz * RandomInUnitSphere()),
             Attenuation = Albedo
         };
     }
@@ -90,7 +90,7 @@ public class Dielectric : Material
         return new ScatterRecord()
         {
             Attenuation = ColorWhite,
-            Scattered = new Ray(rec.P, direction, rayIn.Time)
+            Scattered = new Ray(rec.P, direction)
         };
     }
 
