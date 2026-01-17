@@ -60,14 +60,14 @@ public static class Metrics
     public static void Display()
     {
         if (!IsActive) return;
-        Error.WriteLine("Events:");
-        Error.WriteLine($"- Ray-Sphere: {numRaySphere:N0}");
-        Error.WriteLine($"- Ray-Box: {numRayBox:N0}");
-        Error.WriteLine($"- Ray-Triangle: {numRayTriangle:N0}");
-        Error.WriteLine("Timers: ");
+        WriteLine("Events:");
+        WriteLine($"- Ray-Sphere: {numRaySphere:N0}");
+        WriteLine($"- Ray-Box: {numRayBox:N0}");
+        WriteLine($"- Ray-Triangle: {numRayTriangle:N0}");
+        WriteLine("Timers: ");
         foreach (var metric in metricTimers)
         {
-            Error.WriteLine($"- {metric.Name}: {metric.Elapsed.TotalSeconds:F2} secs");
+            WriteLine($"- {metric.Name}: {metric.Elapsed.TotalSeconds:F2} secs");
         }
     }
 }

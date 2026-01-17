@@ -3,6 +3,7 @@ global using static RTI1W.Helpers;
 global using static System.Console;
 global using static System.Math;
 using System.CommandLine;
+using System.CommandLine.Parsing;
 using System.Diagnostics;
 
 //
@@ -10,6 +11,14 @@ using System.Diagnostics;
 //
 
 var rootCommand = new RootCommand();
+
+// gather existing options before we add our own...
+var builtInOptions = rootCommand.Options
+    .SelectMany(opt => Enumerable.Empty<string>()
+        .Append(opt.Name)
+        .Concat(opt.Aliases))
+    .ToList();
+
 Option<T> addOption<T>(string name, string description, T? defaultValue = default)
 {
     var option = new Option<T>(name)
@@ -32,26 +41,37 @@ var optMaxDepth = addOption("--max-depth", "Max depth / bounces per ray", 30);
 var optRunMode = addOption("--run-mode", "Run mode", RunMode.ParallelFor);
 var optRunNum = addOption("--run-num", "Run parallel count", 4);
 var optNoBvh = addOption("--no-bvh", "Do not use the BVH (makes it much slower)", false);
-var optNoMetrics = addOption("--no-metrics", "Do not show progress and metrics", false);
+var optSeed = addOption("--seed", "Random seed (advanced use for testing)", 0);
 var optOpen = addOption("--open", "Open output image at end", false);
+var optVerbosity = addOption("--verbosity", "Verbosity", Verbosity.Normal);
+var optQuiet = addOption("-q", "Quiet (--verbosity Quiet)", false);
+var optVerbose = addOption("-v", "Verbose (--verbosity Verbose)", false);
+
+// Ensure only one of the verbosity options are used
+rootCommand.Validators.Add(result =>
+{
+    var opts = new Option[] { optVerbosity, optVerbose, optQuiet };
+
+    var num = result.Children
+        .OfType<OptionResult>()
+        .Count(curr => opts.Contains(curr.Option));
+
+    if (num > 1)
+    {
+        var names = string.Join(", ", opts.Select(curr => curr.Name));
+        result.AddError($"Only one of the following options can be used: {names}");
+    }
+});
 
 var parseResult = rootCommand.Parse(args);
 
-var systemOptions = new[]
-{
-    "-?", "/?",
-    "-h", "/h",
-    "--help",
-    "--version",
-};
-
 if (parseResult.Errors.Count > 0 ||
-    parseResult.Tokens.Any(curr => systemOptions.Contains(curr.Value)))
+    parseResult.Tokens.Any(curr => builtInOptions.Contains(curr.Value)))
 {
     return parseResult.Invoke();
 }
 
-var outputPath = parseResult.GetValue(optOutput)!;
+var outputPath = parseResult.GetRequiredValue(optOutput);
 var imageWidth = parseResult.GetValue(optWidth);
 var imageHeight = parseResult.GetValue(optHeight);
 var samplesPerPixel = parseResult.GetValue(optSamples);
@@ -59,8 +79,20 @@ var maxDepth = parseResult.GetValue(optMaxDepth);
 var runMode = parseResult.GetValue(optRunMode);
 var runNum = parseResult.GetValue(optRunNum);
 var useBVH = !parseResult.GetValue(optNoBvh);
-Metrics.IsActive = !parseResult.GetValue(optNoMetrics);
 var openOutput = parseResult.GetValue(optOpen);
+
+Verbosity verbosity;
+if (parseResult.GetValue(optQuiet)) verbosity = Verbosity.Quiet;
+else if (parseResult.GetValue(optVerbose)) verbosity = Verbosity.Diagnostic;
+else verbosity = parseResult.GetValue(optVerbosity);
+
+Metrics.IsActive = verbosity >= Verbosity.Normal;
+
+var seed = parseResult.GetValue(optSeed);
+if (seed != 0)
+{
+    RandomDeterministic = new Random(seed);
+}
 
 //
 // World
@@ -131,14 +163,14 @@ else
 
 void Scanline(int j)
 {
-    if (Metrics.IsActive)
+    if (verbosity >= Verbosity.Normal)
     {
         var id = lineIds[j] = Environment.CurrentManagedThreadId;
         var numLeft = Interlocked.Decrement(ref scanlinesRemaining);
         var errStr = $"Id={id,-4}Elem={j,-5}NumLeft={numLeft}";
         WriteLine(errStr);
     }
-    
+
     var pixY = imageHeight - 1 - j;
     var dataY = j;
 
@@ -164,7 +196,7 @@ Metrics.StopTimer();
 Metrics.StartTimer("Save");
 
 // Write PPM/P3 file
-WriteLine("Creating image");
+if (verbosity >= Verbosity.Normal) WriteLine("Creating image");
 using (var sw = new StreamWriter(outputPath))
 {
     sw.WriteLine("P3");
@@ -190,10 +222,13 @@ Metrics.StopTimer();
 
 Metrics.Display();
 
-WriteLine($"Scanlines:");
-foreach (var lineId in lineIds.GroupBy(curr => curr))
+if (verbosity >= Verbosity.Normal)
 {
-    WriteLine($"- {lineId.Key}: {lineId.Count()}");
+    WriteLine($"Scanlines:");
+    foreach (var lineId in lineIds.GroupBy(curr => curr))
+    {
+        WriteLine($"- {lineId.Key}: {lineId.Count()}");
+    }
 }
 
 if (openOutput)
@@ -325,4 +360,11 @@ enum RunMode
     Sequential,
     Tasks,
     ParallelFor,
+}
+
+enum Verbosity
+{
+    Normal = 0,
+    Diagnostic = 1,
+    Quiet = -1,
 }
