@@ -7,26 +7,26 @@ public static class Metrics
     private static readonly Stopwatch stopwatch = Stopwatch.StartNew();
     private static readonly List<MetricTime> metricTimers = [];
 
-    public static bool IsActive { get; set; }
+    public static bool ActiveEvents { get; set; }
 
     private static long numRaySphere = 0;
     public static void EventRaySphere()
     {
-        if (!IsActive) return;
+        if (!ActiveEvents) return;
         Interlocked.Increment(ref numRaySphere);
     }
 
     private static long numRayBox = 0;
     public static void EventRayBox()
     {
-        if (!IsActive) return;
+        if (!ActiveEvents) return;
         Interlocked.Increment(ref numRayBox);
     }
 
     private static long numRayTriangle = 0;
     public static void EventRayTriangle()
     {
-        if (!IsActive) return;
+        if (!ActiveEvents) return;
         Interlocked.Increment(ref numRayTriangle);
     }
 
@@ -40,7 +40,6 @@ public static class Metrics
 
     public static void StartTimer(string name)
     {
-        if (!IsActive) return;
         var elapsed = stopwatch.Elapsed;
         MetricTime metric = new()
         {
@@ -53,17 +52,18 @@ public static class Metrics
 
     public static void StopTimer()
     {
-        if (!IsActive) return;
         metricTimers.Last().Stop = stopwatch.Elapsed;
     }
 
     public static void Display()
     {
-        if (!IsActive) return;
-        WriteLine("Events:");
-        WriteLine($"- Ray-Sphere: {numRaySphere:N0}");
-        WriteLine($"- Ray-Box: {numRayBox:N0}");
-        WriteLine($"- Ray-Triangle: {numRayTriangle:N0}");
+        if (ActiveEvents)
+        {
+            WriteLine("Events:");
+            WriteLine($"- Ray-Sphere: {numRaySphere:N0}");
+            WriteLine($"- Ray-Box: {numRayBox:N0}");
+            WriteLine($"- Ray-Triangle: {numRayTriangle:N0}");
+        }
         WriteLine("Timers: ");
         foreach (var metric in metricTimers)
         {

@@ -86,7 +86,7 @@ if (parseResult.GetValue(optQuiet)) verbosity = Verbosity.Quiet;
 else if (parseResult.GetValue(optVerbose)) verbosity = Verbosity.Diagnostic;
 else verbosity = parseResult.GetValue(optVerbosity);
 
-Metrics.IsActive = verbosity >= Verbosity.Normal;
+Metrics.ActiveEvents = verbosity >= Verbosity.Diagnostic;
 
 var seed = parseResult.GetValue(optSeed);
 if (seed != 0)
