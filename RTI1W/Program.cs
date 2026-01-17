@@ -3,6 +3,7 @@ global using static RTI1W.Helpers;
 global using static System.Console;
 global using static System.Math;
 using System.CommandLine;
+using System.Diagnostics;
 
 //
 // Cmdline
@@ -32,6 +33,7 @@ var optRunMode = addOption("--run-mode", "Run mode", RunMode.ParallelFor);
 var optRunNum = addOption("--run-num", "Run parallel count", 4);
 var optNoBvh = addOption("--no-bvh", "Do not use the BVH (makes it much slower)", false);
 var optNoMetrics = addOption("--no-metrics", "Do not show progress and metrics", false);
+var optOpen = addOption("--open", "Open output image at end", false);
 
 var parseResult = rootCommand.Parse(args);
 
@@ -58,6 +60,7 @@ var runMode = parseResult.GetValue(optRunMode);
 var runNum = parseResult.GetValue(optRunNum);
 var useBVH = !parseResult.GetValue(optNoBvh);
 Metrics.IsActive = !parseResult.GetValue(optNoMetrics);
+var openOutput = parseResult.GetValue(optOpen);
 
 //
 // World
@@ -191,6 +194,15 @@ WriteLine($"Scanlines:");
 foreach (var lineId in lineIds.GroupBy(curr => curr))
 {
     WriteLine($"- {lineId.Key}: {lineId.Count()}");
+}
+
+if (openOutput)
+{
+    Process.Start(new ProcessStartInfo()
+    {
+        FileName = outputPath,
+        UseShellExecute = true,
+    });
 }
 
 return 0;
