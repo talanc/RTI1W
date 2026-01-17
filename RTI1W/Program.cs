@@ -2,47 +2,89 @@
 global using static RTI1W.Helpers;
 global using static System.Console;
 global using static System.Math;
+using System.CommandLine;
 
-bool useBVH = true;
+//
+// Cmdline
+//
 
-Metrics.IsActive = true;
+var rootCommand = new RootCommand();
+Option<T> addOption<T>(string name, string description, T? defaultValue = default)
+{
+    var option = new Option<T>(name)
+    {
+        Description = description,
+    };
+    if (!EqualityComparer<T>.Default.Equals(default, defaultValue))
+    {
+        option.DefaultValueFactory = ar => defaultValue!;
+    }
+    rootCommand.Add(option);
+    return option;
+}
 
-// Image
+var optOutput = addOption("--output", "Output filename (P3 .ppm file)", "image.ppm");
+var optWidth = addOption("--width", "Output image width", 192);
+var optHeight = addOption("--height", "Output image height", 128);
+var optSamples = addOption("--samples", "Samples per pixel", 100);
+var optMaxDepth = addOption("--max-depth", "Max depth / bounces per ray", 30);
+var optRunMode = addOption("--run-mode", "Run mode", RunMode.ParallelFor);
+var optRunNum = addOption("--run-num", "Run parallel count", 4);
+var optNoBvh = addOption("--no-bvh", "Do not use the BVH (makes it much slower)", false);
+var optNoMetrics = addOption("--no-metrics", "Do not show progress and metrics", false);
 
-const double AspectRatio = 3.0 / 2.0;
-const int ImageWidth = 192;
-const int ImageHeight = (int)(ImageWidth / AspectRatio);
-const int SamplesPerPixel = 100;
-const int MaxDepth = 30;
+var parseResult = rootCommand.Parse(args);
 
+if (parseResult.Errors.Count > 0 ||
+    parseResult.Tokens.Any(curr => curr.Value == "-h" || curr.Value == "--help"))
+{
+    return parseResult.Invoke();
+}
+
+var outputPath = parseResult.GetValue(optOutput)!;
+var imageWidth = parseResult.GetValue(optWidth);
+var imageHeight = parseResult.GetValue(optHeight);
+var samplesPerPixel = parseResult.GetValue(optSamples);
+var maxDepth = parseResult.GetValue(optMaxDepth);
+var runMode = parseResult.GetValue(optRunMode);
+var runNum = parseResult.GetValue(optRunNum);
+var useBVH = !parseResult.GetValue(optNoBvh);
+Metrics.IsActive = !parseResult.GetValue(optNoMetrics);
+
+//
 // World
+//
 
 var world = RandomScene();
 
+//
 // Camera
+//
 
+var aspectRatio = double.Round((double)imageWidth / imageHeight, 1);
 var lookFrom = P3(13, 2, 3);
 var lookAt = P3(0, 0, 0);
 var vUp = P3(0, 1, 0);
 var distToFocus = 10.0;
 var aperture = 0.1;
-var camera = new Camera(lookFrom, lookAt, vUp, 20, AspectRatio, aperture, distToFocus, 0, 1);
+var camera = new Camera(lookFrom, lookAt, vUp, 20, aspectRatio, aperture, distToFocus, 0, 1);
 
+//
 // Render
+//
 
-var image = new int[ImageWidth * ImageHeight];
+var image = new int[imageWidth * imageHeight];
 
-var lineIds = new int[ImageHeight];
+var lineIds = new int[imageHeight];
 
-var scanlinesRemaining = ImageHeight;
+var scanlinesRemaining = imageHeight;
 
 Metrics.StartTimer("Render");
 
-var runMode = RunMode.Sequential;
 
 if (runMode == RunMode.Sequential)
 {
-    for (var i = 0; i < ImageHeight; i += 1)
+    for (var i = 0; i < imageHeight; i += 1)
     {
         Scanline(i);
     }
@@ -51,19 +93,19 @@ else if (runMode == RunMode.ParallelFor)
 {
     var parallelOpts = new ParallelOptions()
     {
+        MaxDegreeOfParallelism = runNum,
     };
-    Parallel.For(0, ImageHeight, parallelOpts, Scanline);
+    Parallel.For(0, imageHeight, parallelOpts, Scanline);
 }
 else if (runMode == RunMode.Tasks)
 {
-    var n = 1;
-    var tasks = new Task[n];
-    for (var i = 0; i < n; i++)
+    var tasks = new Task[runNum];
+    for (var i = 0; i < runNum; i++)
     {
         var localIdx = i;
         tasks[localIdx] = Task.Run(() =>
         {
-            for (var j = localIdx; j < ImageHeight; j += n)
+            for (var j = localIdx; j < imageHeight; j += runNum)
             {
                 Scanline(j);
             }
@@ -83,24 +125,24 @@ void Scanline(int j)
         var id = lineIds[j] = Environment.CurrentManagedThreadId;
         var numLeft = Interlocked.Decrement(ref scanlinesRemaining);
         var errStr = $"Id={id,-4}Elem={j,-5}NumLeft={numLeft}";
-        Error.WriteLine(errStr);
+        WriteLine(errStr);
     }
     
-    var pixY = ImageHeight - 1 - j;
+    var pixY = imageHeight - 1 - j;
     var dataY = j;
 
-    for (var i = 0; i < ImageWidth; i++)
+    for (var i = 0; i < imageWidth; i++)
     {
         var pixX = i;
         var dataX = i;
 
         var pixelColor = C3(0, 0, 0);
-        for (var s = 0; s < SamplesPerPixel; s++)
+        for (var s = 0; s < samplesPerPixel; s++)
         {
-            var u = (pixX + RandomDouble()) / (ImageWidth - 1);
-            var v = (pixY + RandomDouble()) / (ImageHeight - 1);
+            var u = (pixX + RandomDouble()) / (imageWidth - 1);
+            var v = (pixY + RandomDouble()) / (imageHeight - 1);
             var r = camera.GetRay(u, v);
-            pixelColor += RayColor(r, MaxDepth);
+            pixelColor += RayColor(r, maxDepth);
         }
 
         SetPixel(image, dataX, dataY, pixelColor);
@@ -111,28 +153,39 @@ Metrics.StopTimer();
 Metrics.StartTimer("Save");
 
 // Write PPM/P3 file
-Error.WriteLine("Creating image");
-WriteLine("P3");
-Write(ImageWidth); Write(' '); WriteLine(ImageHeight);
-WriteLine("255");
-for (var i = 0; i < image.Length; i++)
+WriteLine("Creating image");
+using (var sw = new StreamWriter(outputPath))
 {
-    var d = image[i];
-    var r = (d >> 16) & 0xFF;
-    var g = (d >> 8) & 0xFF;
-    var b = (d >> 0) & 0xFF;
-    Write(r); Write(' '); Write(g); Write(' '); WriteLine(b);
+    sw.WriteLine("P3");
+    sw.Write(imageWidth);
+    sw.Write(' ');
+    sw.WriteLine(imageHeight);
+    sw.WriteLine("255");
+    for (var i = 0; i < image.Length; i++)
+    {
+        var d = image[i];
+        var r = (d >> 16) & 0xFF;
+        var g = (d >> 8) & 0xFF;
+        var b = (d >> 0) & 0xFF;
+        sw.Write(r);
+        sw.Write(' ');
+        sw.Write(g);
+        sw.Write(' ');
+        sw.WriteLine(b);
+    }
 }
 
 Metrics.StopTimer();
 
 Metrics.Display();
 
-Error.WriteLine($"Scanlines:");
+WriteLine($"Scanlines:");
 foreach (var lineId in lineIds.GroupBy(curr => curr))
 {
-    Error.WriteLine($"- {lineId.Key}: {lineId.Count()}");
+    WriteLine($"- {lineId.Key}: {lineId.Count()}");
 }
+
+return 0;
 
 Vec3 RayColor(Ray r, int depth)
 {
@@ -161,7 +214,7 @@ Vec3 RayColor(Ray r, int depth)
 
 void SetPixel(int[] image, int x, int y, Vec3 pixelColor)
 {
-    var scale = 1.0 / SamplesPerPixel;
+    var scale = 1.0 / samplesPerPixel;
 
     var cr = Sqrt(pixelColor.X * scale);
     var cg = Sqrt(pixelColor.Y * scale);
@@ -171,7 +224,7 @@ void SetPixel(int[] image, int x, int y, Vec3 pixelColor)
     var g = (int)(256 * Clamp(cg, 0, 0.999));
     var b = (int)(256 * Clamp(cb, 0, 0.999));
 
-    var i = x + (y * ImageWidth);
+    var i = x + (y * imageWidth);
     var d = (r << 16) | (g << 8) | b;
     image[i] = d;
 }
@@ -254,11 +307,4 @@ enum RunMode
     Sequential,
     Tasks,
     ParallelFor,
-}
-
-enum MetricsMode
-{
-    None,
-    Summary,
-    All,
 }

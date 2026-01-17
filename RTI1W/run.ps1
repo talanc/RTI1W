@@ -1,4 +1,4 @@
-dotnet run --configuration Release | Out-File -FilePath image.ppm -Encoding Ascii
+dotnet run --configuration Release -- --output image.ppm
 if ($LASTEXITCODE -eq 0) {
 	.\image.ppm
 }
