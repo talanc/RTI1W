@@ -146,6 +146,8 @@ public static class Helpers
 
     public static bool IntersectRayBox(Ray ray, Box3 box, float tMin, float tMax)
     {
+        // TODO i think this can use SIMD
+
         var t0v = box.Min - ray.Origin;
         var t1v = box.Max - ray.Origin;
 

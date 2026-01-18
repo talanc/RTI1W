@@ -41,8 +41,9 @@ public class BvhHittable : Hittable
 
     public override HitRecord? Hit(Ray r, float tMin, float tMax)
     {
+        Metrics.EventRayBvh();
+
         // Ignore if no intersection
-        Metrics.EventRayBox();
         if (!IntersectRayBox(r, bounds, tMin, tMax))
         {
             return null;
@@ -107,13 +108,9 @@ public class Triangle : Hittable
         P2 = p2;
         Material = material;
 
-        var minX = Min(Min(p0.X, p1.X), p2.X);
-        var minY = Min(Min(p0.Y, p1.Y), p2.Y);
-        var minZ = Min(Min(p0.Z, p1.Z), p2.Z);
-        var maxX = Max(Max(p0.X, p1.X), p2.X);
-        var maxY = Max(Max(p0.Y, p1.Y), p2.Y);
-        var maxZ = Max(Max(p0.Z, p1.Z), p2.Z);
-        BoundingBox = new Box3(V3(minX, minY, minZ), V3(maxX, maxY, maxZ));
+        var min = Vector3.Min(Vector3.Min(p0, p1), p2);
+        var max = Vector3.Max(Vector3.Max(p0, p1), p2);
+        BoundingBox = new Box3(min, max);
 
         N = Cross(p1 - p0, p2 - p0);
     }
@@ -183,7 +180,7 @@ public class Sphere : Hittable
 
     public override Box3 GetBoundingBox()
     {
-        var half = V3(Radius, Radius, Radius);
+        var half = new Vector3(Radius);
         return new Box3(Center - half, Center + half);
     }
 

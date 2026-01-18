@@ -9,18 +9,18 @@ public static class Metrics
 
     public static bool ActiveEvents { get; set; }
 
+    private static long numRayBvh = 0;
+    public static void EventRayBvh()
+    {
+        if (!ActiveEvents) return;
+        Interlocked.Increment(ref numRayBvh);
+    }
+
     private static long numRaySphere = 0;
     public static void EventRaySphere()
     {
         if (!ActiveEvents) return;
         Interlocked.Increment(ref numRaySphere);
-    }
-
-    private static long numRayBox = 0;
-    public static void EventRayBox()
-    {
-        if (!ActiveEvents) return;
-        Interlocked.Increment(ref numRayBox);
     }
 
     private static long numRayTriangle = 0;
@@ -60,11 +60,11 @@ public static class Metrics
         if (ActiveEvents)
         {
             WriteLine("Events:");
+            WriteLine($"- Ray-BVH: {numRayBvh:N0}");
             WriteLine($"- Ray-Sphere: {numRaySphere:N0}");
-            WriteLine($"- Ray-Box: {numRayBox:N0}");
             WriteLine($"- Ray-Triangle: {numRayTriangle:N0}");
         }
-        WriteLine("Timers: ");
+        WriteLine("Timers:");
         foreach (var metric in metricTimers)
         {
             WriteLine($"- {metric.Name}: {metric.Elapsed.TotalSeconds:F2} secs");

@@ -96,7 +96,7 @@ public class Dielectric : Material
 
     private float Reflectance(float cosine, float refIdx)
     {
-        var r0 = ((1 - refIdx) / (1 + refIdx));
+        var r0 = (1 - refIdx) / (1 + refIdx);
         r0 = r0 * r0;
         return r0 + (1 - r0) * Pow(1 - cosine, 5);
     }

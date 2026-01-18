@@ -31,6 +31,7 @@ public class BvhHelper
             bounds = Box3.Union(bounds, span[i].Bounds);
         }
 
+        // TODO i think the RHS should be null to reduce Hit events
         if (span.Length == 1)
         {
             return new BvhHittable(bounds, span[0].Hittable, span[0].Hittable);
@@ -40,6 +41,9 @@ public class BvhHelper
         {
             return new BvhHittable(bounds, span[0].Hittable, span[1].Hittable);
         }
+
+        // TODO i think we can use a better partitioning algorithm
+        // see https://pbr-book.org/4ed/Primitives_and_Intersection_Acceleration/Bounding_Volume_Hierarchies
 
         var size = bounds.Size();
         if (size.X > size.Y && size.X > size.Z)
