@@ -7,8 +7,8 @@ public struct Box3 : IEquatable<Box3>
 
     public Box3()
     {
-        var minVal = double.MinValue;
-        var maxVal = double.MaxValue;
+        var minVal = float.MinValue;
+        var maxVal = float.MaxValue;
         Min = V3(maxVal, maxVal, maxVal);
         Max = V3(minVal, minVal, minVal);
     }
@@ -65,7 +65,7 @@ public struct Box3 : IEquatable<Box3>
         return Min + GetSize() / 2;
     }
 
-    public double GetVolume()
+    public float GetVolume()
     {
         var size = GetSize();
         return size.X * size.Y * size.Z;

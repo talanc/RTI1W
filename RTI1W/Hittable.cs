@@ -2,7 +2,7 @@
 
 public abstract class Hittable
 {
-    public abstract HitRecord? Hit(Ray r, double tMin, double tMax);
+    public abstract HitRecord? Hit(Ray r, float tMin, float tMax);
     public abstract Box3 GetBoundingBox();
 }
 
@@ -11,7 +11,7 @@ public struct HitRecord
     public Vec3 P;
     public Vec3 Normal;
     public Material Material;
-    public double T;
+    public float T;
     public bool FrontFace;
 
     public void SetFaceNormal(Ray r, Vec3 outwardNormal)
@@ -39,7 +39,7 @@ public class BvhHittable : Hittable
         return bounds;
     }
 
-    public override HitRecord? Hit(Ray r, double tMin, double tMax)
+    public override HitRecord? Hit(Ray r, float tMin, float tMax)
     {
         // Ignore if no intersection
         Metrics.EventRayBox();
@@ -68,7 +68,7 @@ public class HittableList : Hittable
         List.Add(hittable);
     }
 
-    public override HitRecord? Hit(Ray r, double tMin, double tMax)
+    public override HitRecord? Hit(Ray r, float tMin, float tMax)
     {
         HitRecord? rec = null;
         var closestSoFar = tMax;
@@ -123,7 +123,7 @@ public class Triangle : Hittable
         return BoundingBox;
     }
 
-    public override HitRecord? Hit(Ray r, double tMin, double tMax)
+    public override HitRecord? Hit(Ray r, float tMin, float tMax)
     {
         Metrics.EventRayTriangle();
 
@@ -171,10 +171,10 @@ public class Triangle : Hittable
 public class Sphere : Hittable
 {
     public Vec3 Center;
-    public double Radius;
+    public float Radius;
     public Material Material;
 
-    public Sphere(Vec3 center, double radius, Material material)
+    public Sphere(Vec3 center, float radius, Material material)
     {
         Center = center;
         Radius = radius;
@@ -187,7 +187,7 @@ public class Sphere : Hittable
         return new Box3(Center - half, Center + half);
     }
 
-    public override HitRecord? Hit(Ray r, double tMin, double tMax)
+    public override HitRecord? Hit(Ray r, float tMin, float tMax)
     {
         Metrics.EventRaySphere();
 

@@ -40,9 +40,9 @@ public class Lambertian : Material
 public class Metal : Material
 {
     public Vec3 Albedo;
-    public double Fuzz;
+    public float Fuzz;
 
-    public Metal(Vec3 albedo, double fuzz)
+    public Metal(Vec3 albedo, float fuzz)
     {
         Albedo = albedo;
         Fuzz = fuzz < 1 ? fuzz : 1;
@@ -61,9 +61,9 @@ public class Metal : Material
 
 public class Dielectric : Material
 {
-    public double Ir;
+    public float Ir;
 
-    public Dielectric(double ir)
+    public Dielectric(float ir)
     {
         Ir = ir;
     }
@@ -74,11 +74,11 @@ public class Dielectric : Material
 
         var unitDirection = UnitVector(rayIn.Direction);
         var cosTheta = Min(Dot(-unitDirection, rec.Normal), 1);
-        var sinTheta = Sqrt(1.0 - cosTheta * cosTheta);
+        var sinTheta = Sqrt(1.0f - cosTheta * cosTheta);
 
         var cannotRefract = reflectionRatio * sinTheta > 1;
         Vec3 direction;
-        if (cannotRefract || Reflectance(cosTheta, reflectionRatio) > RandomDouble())
+        if (cannotRefract || Reflectance(cosTheta, reflectionRatio) > RandomValue())
         {
             direction = Reflect(unitDirection, rec.Normal);
         }
@@ -94,7 +94,7 @@ public class Dielectric : Material
         };
     }
 
-    private double Reflectance(double cosine, double refIdx)
+    private float Reflectance(float cosine, float refIdx)
     {
         var r0 = ((1 - refIdx) / (1 + refIdx));
         r0 = r0 * r0;

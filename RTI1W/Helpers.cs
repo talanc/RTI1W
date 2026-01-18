@@ -2,22 +2,22 @@
 
 public static class Helpers
 {
-    public static Vec3 C3(double x, double y, double z)
+    public static Vec3 C3(float x, float y, float z)
     {
         return new Vec3(x, y, z);
     }
 
-    public static Vec3 P3(double x, double y, double z)
+    public static Vec3 P3(float x, float y, float z)
     {
         return new Vec3(x, y, z);
     }
 
-    public static Vec3 V3(double x, double y, double z)
+    public static Vec3 V3(float x, float y, float z)
     {
         return new Vec3(x, y, z);
     }
 
-    public static double Dot(Vec3 a, Vec3 b)
+    public static float Dot(Vec3 a, Vec3 b)
     {
         return a.X * b.X + a.Y * b.Y + a.Z * b.Z;
     }
@@ -35,7 +35,7 @@ public static class Helpers
         return a / a.Length;
     }
 
-    public static double DegreesToRadians(double deg)
+    public static float DegreesToRadians(float deg)
     {
         return deg * PI / 180;
     }
@@ -48,46 +48,46 @@ public static class Helpers
     /// <summary>
     /// Returns a value between [0.0, 1.0)
     /// </summary>
-    public static double RandomDouble()
+    public static float RandomValue()
     {
         if (RandomSeed != 0)
         {
-            return randomLocal.Value!.NextDouble();
+            return randomLocal.Value!.NextSingle();
         }
-        return Random.Shared.NextDouble();
+        return Random.Shared.NextSingle();
     }
 
     /// <summary>
     /// Returns a value between [min, max)
     /// </summary>
-    public static double RandomDouble(double min, double max)
+    public static float RandomValue(float min, float max)
     {
-        return min + (max - min) * RandomDouble();
+        return min + (max - min) * RandomValue();
     }
 
     public static Vec3 RandomVec3()
     {
-        return V3(RandomDouble(), RandomDouble(), RandomDouble());
+        return V3(RandomValue(), RandomValue(), RandomValue());
     }
 
-    public static Vec3 RandomVec3(double min, double max)
+    public static Vec3 RandomVec3(float min, float max)
     {
-        return V3(RandomDouble(min, max), RandomDouble(min, max), RandomDouble(min, max));
+        return V3(RandomValue(min, max), RandomValue(min, max), RandomValue(min, max));
     }
 
     public static Vec3 RandomInUnitSphere()
     {
-        var r = Pow(RandomDouble(), 1.0 / 3.0);
-        var theta = RandomDouble(0, Tau);
-        var phi = Acos(2 * RandomDouble() - 1);
+        var r = Pow(RandomValue(), 1.0f / 3.0f);
+        var theta = RandomValue(0, Tau);
+        var phi = Acos(2 * RandomValue() - 1);
         var sinPhi = Sin(phi);
         return V3(r * sinPhi * Cos(theta), r * sinPhi * Sin(theta), r * Cos(phi));
     }
 
     public static Vec3 RandomInUnitCircle()
     {
-        var theta = RandomDouble(0, Tau);
-        var dist = Sqrt(RandomDouble());
+        var theta = RandomValue(0, Tau);
+        var dist = Sqrt(RandomValue());
         return V3(dist * Cos(theta), dist * Sin(theta), 0);
     }
 
@@ -111,9 +111,9 @@ public static class Helpers
         return v - 2 * Dot(v, n) * n;
     }
 
-    public static Vec3 Refract(Vec3 uv, Vec3 n, double etaiOverEtat)
+    public static Vec3 Refract(Vec3 uv, Vec3 n, float etaiOverEtat)
     {
-        var cosTheta = Min(Dot(-uv, n), 1.0);
+        var cosTheta = Min(Dot(-uv, n), 1.0f);
         var rOutPerp = etaiOverEtat * (uv + cosTheta * n);
         var rOutParallel = -Sqrt(Abs(1 - rOutPerp.LengthSquared)) * n;
         return rOutPerp + rOutParallel;
@@ -125,23 +125,23 @@ public static class Helpers
     public static Vec3 ColorGreen => C3(0, 1, 0);
     public static Vec3 ColorBlue => C3(0, 0, 1);
 
-    public static double Lerp(double t, double v1, double v2)
+    public static float Lerp(float t, float v1, float v2)
     {
         return (1 - t) * v1 + t * v2;
     }
 
-    public static bool IsNearZero(double v)
+    public static bool IsNearZero(float v)
     {
-        const double S = 1e-8;
+        const float S = 1e-8f;
         return Abs(v) < S;
     }
 
     public static bool IntersectRayBox(Ray ray, Box3 box)
     {
-        return IntersectRayBox(ray, box, 0, double.PositiveInfinity);
+        return IntersectRayBox(ray, box, 0, float.PositiveInfinity);
     }
 
-    public static bool IntersectRayBox(Ray ray, Box3 box, double tMin, double tMax)
+    public static bool IntersectRayBox(Ray ray, Box3 box, float tMin, float tMax)
     {
         var t0v = box.Min - ray.Origin;
         var t1v = box.Max - ray.Origin;

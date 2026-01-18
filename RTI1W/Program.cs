@@ -1,7 +1,7 @@
 ﻿global using RTI1W;
 global using static RTI1W.Helpers;
 global using static System.Console;
-global using static System.Math;
+global using static System.MathF;
 using System.CommandLine;
 using System.CommandLine.Parsing;
 using System.Diagnostics;
@@ -97,12 +97,12 @@ var world = RandomScene();
 // Camera
 //
 
-var aspectRatio = double.Round((double)imageWidth / imageHeight, 1);
+var aspectRatio = Round((float)imageWidth / imageHeight, 1);
 var lookFrom = P3(13, 2, 3);
 var lookAt = P3(0, 0, 0);
 var vUp = P3(0, 1, 0);
-var distToFocus = 10.0;
-var aperture = 0.1;
+var distToFocus = 10.0f;
+var aperture = 0.1f;
 var camera = new Camera(lookFrom, lookAt, vUp, 20, aspectRatio, aperture, distToFocus);
 
 //
@@ -163,8 +163,8 @@ void Scanline(int j)
         var pixelColor = C3(0, 0, 0);
         for (var s = 0; s < samplesPerPixel; s++)
         {
-            var u = (pixX + RandomDouble()) / (imageWidth - 1);
-            var v = (pixY + RandomDouble()) / (imageHeight - 1);
+            var u = (pixX + RandomValue()) / (imageWidth - 1);
+            var v = (pixY + RandomValue()) / (imageHeight - 1);
             var r = camera.GetRay(u, v);
             pixelColor += RayColor(r, maxDepth);
         }
@@ -230,7 +230,7 @@ Vec3 RayColor(Ray r, int depth)
         return ColorBlack;
     }
 
-    var recMaybe = world.Hit(r, 0.001, double.PositiveInfinity);
+    var recMaybe = world.Hit(r, 0.001f, float.PositiveInfinity);
     if (recMaybe.HasValue)
     {
         var hitRec = recMaybe.Value;
@@ -244,21 +244,21 @@ Vec3 RayColor(Ray r, int depth)
     }
 
     var unitDir = UnitVector(r.Direction);
-    var t = 0.5 * (unitDir.Y + 1);
-    return (1 - t) * ColorWhite + t * C3(0.5, 0.7, 1.0);
+    var t = 0.5f * (unitDir.Y + 1);
+    return (1 - t) * ColorWhite + t * C3(0.5f, 0.7f, 1.0f);
 }
 
 void SetPixel(int[] image, int x, int y, Vec3 pixelColor)
 {
-    var scale = 1.0 / samplesPerPixel;
+    var scale = 1.0f / samplesPerPixel;
 
     var cr = Sqrt(pixelColor.X * scale);
     var cg = Sqrt(pixelColor.Y * scale);
     var cb = Sqrt(pixelColor.Z * scale);
 
-    var r = (int)(256 * Clamp(cr, 0, 0.999));
-    var g = (int)(256 * Clamp(cg, 0, 0.999));
-    var b = (int)(256 * Clamp(cb, 0, 0.999));
+    var r = (int)(256 * Math.Clamp(cr, 0, 0.999));
+    var g = (int)(256 * Math.Clamp(cg, 0, 0.999));
+    var b = (int)(256 * Math.Clamp(cb, 0, 0.999));
 
     var i = x + (y * imageWidth);
     var d = (r << 16) | (g << 8) | b;
@@ -269,17 +269,17 @@ Hittable RandomScene()
 {
     var world = new HittableList();
 
-    var matGround = new Lambertian(C3(0.5, 0.5, 0.5));
+    var matGround = new Lambertian(C3(0.5f, 0.5f, 0.5f));
     world.Add(new Sphere(P3(0, -1000, 0), 1000, matGround));
 
     for (var a = -11; a < 11; a++)
     {
         for (var b = -11; b < 11; b++)
         {
-            var chooseMat = RandomDouble();
-            var center = P3(a + 0.9 * RandomDouble(), 0.2, b + 0.9 * RandomDouble());
+            var chooseMat = RandomValue();
+            var center = P3(a + 0.9f * RandomValue(), 0.2f, b + 0.9f * RandomValue());
 
-            if ((center - P3(4, 0.2, 0)).Length > 0.9)
+            if ((center - P3(4, 0.2f, 0)).Length > 0.9)
             {
                 if (chooseMat < 0.8)
                 {
@@ -287,41 +287,41 @@ Hittable RandomScene()
                     var albedo = RandomVec3() * RandomVec3();
                     var mat = new Lambertian(albedo);
 
-                    world.Add(new Sphere(center, 0.2, mat));
+                    world.Add(new Sphere(center, 0.2f, mat));
                 }
                 else if (chooseMat < 0.95)
                 {
                     // Metal
-                    var albedo = RandomVec3(0.5, 1);
-                    var fuzz = RandomDouble(0, 0.5);
+                    var albedo = RandomVec3(0.5f, 1);
+                    var fuzz = RandomValue(0, 0.5f);
                     var mat = new Metal(albedo, fuzz);
 
-                    world.Add(new Sphere(center, 0.2, mat));
+                    world.Add(new Sphere(center, 0.2f, mat));
                 }
                 else
                 {
                     // Glass
-                    var mat = new Dielectric(1.5);
+                    var mat = new Dielectric(1.5f);
 
-                    world.Add(new Sphere(center, 0.2, mat));
+                    world.Add(new Sphere(center, 0.2f, mat));
                 }
             }
         }
     }
 
-    var material1 = new Dielectric(1.5);
+    var material1 = new Dielectric(1.5f);
     world.Add(new Sphere(P3(0, 1, 0), 1, material1));
 
-    var material2 = new Lambertian(C3(0.4, 0.2, 0.1));
+    var material2 = new Lambertian(C3(0.4f, 0.2f, 0.1f));
     world.Add(new Sphere(P3(-4, 1, 0), 1, material2));
 
-    var material3 = new Metal(C3(0.7, 0.6, 0.5), 0.0);
+    var material3 = new Metal(C3(0.7f, 0.6f, 0.5f), 0);
     world.Add(new Sphere(P3(4, 1, 0), 1, material3));
 
     // A red triangle
-    var t0 = P3(0, 1.4, 2.8);
-    var t1 = P3(3, 1.9, 2.3);
-    var t2 = P3(0, 2.2, 3);
+    var t0 = P3(0, 1.4f, 2.8f);
+    var t1 = P3(3, 1.9f, 2.3f);
+    var t2 = P3(0, 2.2f, 3);
     var material4 = new Lambertian(ColorRed);
     world.Add(new Triangle(t0, t1, t2, material4));
 

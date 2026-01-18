@@ -13,7 +13,7 @@ public struct Ray
         InvDirection = 1 / Direction;
     }
 
-    public Vec3 At(double t)
+    public Vec3 At(float t)
     {
         return Origin + t * Direction;
     }

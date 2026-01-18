@@ -4,24 +4,24 @@ namespace RTI1W;
 
 public struct Vec3 : IEquatable<Vec3>
 {
-    public double X;
-    public double Y;
-    public double Z;
+    public float X;
+    public float Y;
+    public float Z;
 
-    public Vec3(double x, double y, double z)
+    public Vec3(float x, float y, float z)
     {
         X = x;
         Y = y;
         Z = z;
     }
 
-    public double LengthSquared => X * X + Y * Y + Z * Z;
+    public float LengthSquared => X * X + Y * Y + Z * Z;
 
-    public double Length => Sqrt(LengthSquared);
+    public float Length => Sqrt(LengthSquared);
 
     public bool IsNearZero()
     {
-        const double S = 1e-8;
+        const float S = 1e-8f;
         return Abs(X) < S && Abs(Y) < S && Abs(Z) < S;
     }
 
@@ -50,12 +50,12 @@ public struct Vec3 : IEquatable<Vec3>
         return new Vec3(a.X * b.X, a.Y * b.Y, a.Z * b.Z);
     }
 
-    public static Vec3 operator *(Vec3 a, double b)
+    public static Vec3 operator *(Vec3 a, float b)
     {
         return new Vec3(a.X * b, a.Y * b, a.Z * b);
     }
 
-    public static Vec3 operator *(double a, Vec3 b)
+    public static Vec3 operator *(float a, Vec3 b)
     {
         return new Vec3(a * b.X, a * b.Y, a * b.Z);
     }
@@ -65,12 +65,12 @@ public struct Vec3 : IEquatable<Vec3>
         return new Vec3(a.X / b.X, a.Y / b.Y, a.Z / b.Z);
     }
 
-    public static Vec3 operator /(Vec3 a, double b)
+    public static Vec3 operator /(Vec3 a, float b)
     {
         return new Vec3(a.X / b, a.Y / b, a.Z / b);
     }
 
-    public static Vec3 operator /(double a, Vec3 b)
+    public static Vec3 operator /(float a, Vec3 b)
     {
         return new Vec3(a / b.X, a / b.Y, a / b.Z);
     }

@@ -35,9 +35,9 @@ public class HelpersTests
         var span = s.AsSpan();
         Span<Range> ranges = stackalloc Range[3];
         span.Split(ranges, ",", StringSplitOptions.TrimEntries);
-        var x = double.Parse(span[ranges[0]]);
-        var y = double.Parse(span[ranges[1]]);
-        var z = double.Parse(span[ranges[2]]);
+        var x = float.Parse(span[ranges[0]]);
+        var y = float.Parse(span[ranges[1]]);
+        var z = float.Parse(span[ranges[2]]);
         return V3(x, y, z);
     }
 
@@ -60,7 +60,7 @@ public class HelpersTests
     public void TestRandomInUnitCircleDistribution()
     {
         const int N = 1_000_000;
-        double sumX = 0, sumY = 0, sumX2 = 0, sumY2 = 0;
+        float sumX = 0, sumY = 0, sumX2 = 0, sumY2 = 0;
         for (int i = 0; i < N; i++)
         {
             var p = RandomInUnitCircle();
@@ -69,10 +69,10 @@ public class HelpersTests
             sumX2 += p.X * p.X;
             sumY2 += p.Y * p.Y;
         }
-        double meanX = sumX / N;
-        double meanY = sumY / N;
-        double varX = sumX2 / N - meanX * meanX;
-        double varY = sumY2 / N - meanY * meanY;
+        float meanX = sumX / N;
+        float meanY = sumY / N;
+        float varX = sumX2 / N - meanX * meanX;
+        float varY = sumY2 / N - meanY * meanY;
 
         // Check means are close to 0
         Assert.IsLessThan(0.01, Abs(meanX));
@@ -102,7 +102,7 @@ public class HelpersTests
     public void TestRandomInUnitSphereDistribution()
     {
         const int N = 1_000_000;
-        double sumX = 0, sumY = 0, sumZ = 0, sumX2 = 0, sumY2 = 0, sumZ2 = 0;
+        float sumX = 0, sumY = 0, sumZ = 0, sumX2 = 0, sumY2 = 0, sumZ2 = 0;
         for (int i = 0; i < N; i++)
         {
             var p = RandomInUnitSphere();
@@ -113,12 +113,12 @@ public class HelpersTests
             sumY2 += p.Y * p.Y;
             sumZ2 += p.Z * p.Z;
         }
-        double meanX = sumX / N;
-        double meanY = sumY / N;
-        double meanZ = sumZ / N;
-        double varX = sumX2 / N - meanX * meanX;
-        double varY = sumY2 / N - meanY * meanY;
-        double varZ = sumZ2 / N - meanZ * meanZ;
+        float meanX = sumX / N;
+        float meanY = sumY / N;
+        float meanZ = sumZ / N;
+        float varX = sumX2 / N - meanX * meanX;
+        float varY = sumY2 / N - meanY * meanY;
+        float varZ = sumZ2 / N - meanZ * meanZ;
 
         // Check means are close to 0
         Assert.IsLessThan(0.01, Abs(meanX));

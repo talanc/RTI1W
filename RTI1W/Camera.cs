@@ -9,13 +9,13 @@ public class Camera
     public Vec3 U;
     public Vec3 V;
     public Vec3 W;
-    public double LensRadius;
+    public float LensRadius;
 
-    public Camera(Vec3 lookFrom, Vec3 lookAt, Vec3 vUp, double vFov, double aspectRatio, double aperture, double focusDist)
+    public Camera(Vec3 lookFrom, Vec3 lookAt, Vec3 vUp, float vFov, float aspectRatio, float aperture, float focusDist)
     {
         var theta = DegreesToRadians(vFov);
         var h = Tan(theta / 2);
-        var viewportHeight = 2.0 * h;
+        var viewportHeight = 2.0f * h;
         var viewportWidth = aspectRatio * viewportHeight;
 
         W = UnitVector(lookFrom - lookAt);
@@ -30,7 +30,7 @@ public class Camera
         LensRadius = aperture / 2;
     }
 
-    public Ray GetRay(double s, double t)
+    public Ray GetRay(float s, float t)
     {
         var rd = LensRadius * RandomInUnitCircle();
         var offset = U * rd.X + V * rd.Y;
