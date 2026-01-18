@@ -73,10 +73,7 @@ public struct Box3 : IEquatable<Box3>
 
     public Vector3 Lerp(Vector3 t)
     {
-        return V3(
-            Helpers.Lerp(t.X, Min.X, Max.X),
-            Helpers.Lerp(t.Y, Min.Y, Max.Y),
-            Helpers.Lerp(t.Z, Min.Z, Max.Z));
+        return Vector3.Lerp(Min, Max, t);
     }
 
     public static Box3 Union(Box3 b1, Box3 b2)

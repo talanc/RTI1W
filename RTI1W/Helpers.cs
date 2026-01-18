@@ -19,20 +19,17 @@ public static class Helpers
 
     public static float Dot(Vector3 a, Vector3 b)
     {
-        return a.X * b.X + a.Y * b.Y + a.Z * b.Z;
+        return Vector3.Dot(a, b);
     }
 
     public static Vector3 Cross(Vector3 a, Vector3 b)
     {
-        return new Vector3(
-            a.Y * b.Z - a.Z * b.Y,
-            a.Z * b.X - a.X * b.Z,
-            a.X * b.Y - a.Y * b.X);
+        return Vector3.Cross(a, b);
     }
 
     public static Vector3 UnitVector(Vector3 a)
     {
-        return a / a.Length();
+        return Vector3.Normalize(a);
     }
 
     public static float DegreesToRadians(float deg)

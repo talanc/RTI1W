@@ -1,16 +1,16 @@
 ﻿namespace RTI1W;
 
-public struct Ray
+public readonly struct Ray
 {
-    public Vector3 Origin;
-    public Vector3 Direction;
-    public Vector3 InvDirection;
+    public readonly Vector3 Origin;
+    public readonly Vector3 Direction;
+    public readonly Vector3 InvDirection;
 
     public Ray(Vector3 origin, Vector3 direction)
     {
         Origin = origin;
         Direction = direction;
-        InvDirection = new Vector3(1f / Direction.X, 1f / Direction.Y, 1f / Direction.Z);
+        InvDirection = Vector3.One / Direction;
     }
 
     public Vector3 At(float t)
