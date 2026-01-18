@@ -44,7 +44,7 @@ public struct Box3 : IEquatable<Box3>
 
     public override int GetHashCode()
     {
-        return Min.GetHashCode() ^ Max.GetHashCode();
+        return HashCode.Combine(Min, Max);
     }
 
     public bool Contains(Vector3 p)
@@ -53,19 +53,19 @@ public struct Box3 : IEquatable<Box3>
             p.X <= Max.X && p.Y <= Max.Y && p.Z <= Max.Z;
     }
 
-    public Vector3 GetSize()
+    public Vector3 Size()
     {
         return Max - Min;
     }
 
-    public Vector3 GetMiddle()
+    public Vector3 Middle()
     {
-        return Min + GetSize() / 2;
+        return Min + Size() / 2;
     }
 
-    public float GetVolume()
+    public float Volume()
     {
-        var size = GetSize();
+        var size = Size();
         return size.X * size.Y * size.Z;
     }
 

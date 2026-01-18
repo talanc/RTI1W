@@ -9,7 +9,7 @@ public class BvhHelper
         {
             var hittable = hittables[i];
             var bounds = hittable.GetBoundingBox();
-            hittableBoxArr[i] = new NodeInfo(hittable, bounds, bounds.GetMiddle());
+            hittableBoxArr[i] = new NodeInfo(hittable, bounds, bounds.Middle());
         }
 
         var span = new Span<NodeInfo>(hittableBoxArr);
@@ -41,7 +41,7 @@ public class BvhHelper
             return new BvhHittable(bounds, span[0].Hittable, span[1].Hittable);
         }
 
-        var size = bounds.GetSize();
+        var size = bounds.Size();
         if (size.X > size.Y && size.X > size.Z)
         {
             span.Sort((a, b) => (int)((a.Middle.X - b.Middle.X) * 1000));
