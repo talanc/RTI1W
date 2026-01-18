@@ -43,9 +43,9 @@ var optRunNum = addOption("--run-num", "Run parallel count", 4);
 var optNoBvh = addOption("--no-bvh", "Do not use the BVH (makes it much slower)", false);
 var optSeed = addOption("--seed", "Random seed (advanced use for testing)", 0);
 var optOpen = addOption("--open", "Open output image at end", false);
-var optVerbosity = addOption("--verbosity", "Verbosity", Verbosity.Normal);
-var optQuiet = addOption("-q", "Quiet (--verbosity Quiet)", false);
-var optVerbose = addOption("-v", "Verbose (--verbosity Verbose)", false);
+var optVerbosity = addOption("--verbosity", "Verbosity output mode", Verbosity.Normal);
+var optQuiet = addOption("-q", "Quiet output (--verbosity Quiet)", false);
+var optVerbose = addOption("-v", "Verbose output (--verbosity Verbose)", false);
 
 // Ensure only one of the verbosity options are used
 rootCommand.Validators.Add(result =>
@@ -60,6 +60,15 @@ rootCommand.Validators.Add(result =>
     {
         var names = string.Join(", ", opts.Select(curr => curr.Name));
         result.AddError($"Only one of the following options can be used: {names}");
+    }
+});
+
+// Ensure --seed is not specified with any multithreading modes (massive performance issues)
+rootCommand.Validators.Add(result =>
+{
+    if (result.GetValue(optRunMode) != RunMode.Sequential && result.GetValue(optSeed) != 0)
+    {
+        result.AddError($"{optSeed.Name} can only be specified with '{optRunMode.Name} {RunMode.Sequential}'");
     }
 });
 
