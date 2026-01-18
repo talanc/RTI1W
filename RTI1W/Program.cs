@@ -1,4 +1,5 @@
 ﻿global using RTI1W;
+global using System.Numerics;
 global using static RTI1W.Helpers;
 global using static System.Console;
 global using static System.MathF;
@@ -223,7 +224,7 @@ if (openOutput)
 
 return 0;
 
-Vec3 RayColor(Ray r, int depth)
+Vector3 RayColor(Ray r, int depth)
 {
     if (depth <= 0)
     {
@@ -248,7 +249,7 @@ Vec3 RayColor(Ray r, int depth)
     return (1 - t) * ColorWhite + t * C3(0.5f, 0.7f, 1.0f);
 }
 
-void SetPixel(int[] image, int x, int y, Vec3 pixelColor)
+void SetPixel(int[] image, int x, int y, Vector3 pixelColor)
 {
     var scale = 1.0f / samplesPerPixel;
 
@@ -279,12 +280,12 @@ Hittable RandomScene()
             var chooseMat = RandomValue();
             var center = P3(a + 0.9f * RandomValue(), 0.2f, b + 0.9f * RandomValue());
 
-            if ((center - P3(4, 0.2f, 0)).Length > 0.9)
+            if ((center - P3(4, 0.2f, 0)).Length() > 0.9)
             {
                 if (chooseMat < 0.8)
                 {
                     // Diffuse
-                    var albedo = RandomVec3() * RandomVec3();
+                    var albedo = RandomVector3() * RandomVector3();
                     var mat = new Lambertian(albedo);
 
                     world.Add(new Sphere(center, 0.2f, mat));
@@ -292,7 +293,7 @@ Hittable RandomScene()
                 else if (chooseMat < 0.95)
                 {
                     // Metal
-                    var albedo = RandomVec3(0.5f, 1);
+                    var albedo = RandomVector3(0.5f, 1);
                     var fuzz = RandomValue(0, 0.5f);
                     var mat = new Metal(albedo, fuzz);
 

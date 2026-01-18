@@ -2,16 +2,16 @@
 
 public class Camera
 {
-    public Vec3 Origin;
-    public Vec3 LowerLeftCorner;
-    public Vec3 Horizontal;
-    public Vec3 Vertical;
-    public Vec3 U;
-    public Vec3 V;
-    public Vec3 W;
+    public Vector3 Origin;
+    public Vector3 LowerLeftCorner;
+    public Vector3 Horizontal;
+    public Vector3 Vertical;
+    public Vector3 U;
+    public Vector3 V;
+    public Vector3 W;
     public float LensRadius;
 
-    public Camera(Vec3 lookFrom, Vec3 lookAt, Vec3 vUp, float vFov, float aspectRatio, float aperture, float focusDist)
+    public Camera(Vector3 lookFrom, Vector3 lookAt, Vector3 vUp, float vFov, float aspectRatio, float aperture, float focusDist)
     {
         var theta = DegreesToRadians(vFov);
         var h = Tan(theta / 2);

@@ -8,13 +8,13 @@ public abstract class Hittable
 
 public struct HitRecord
 {
-    public Vec3 P;
-    public Vec3 Normal;
+    public Vector3 P;
+    public Vector3 Normal;
     public Material Material;
     public float T;
     public bool FrontFace;
 
-    public void SetFaceNormal(Ray r, Vec3 outwardNormal)
+    public void SetFaceNormal(Ray r, Vector3 outwardNormal)
     {
         FrontFace = Dot(r.Direction, outwardNormal) < 0;
         Normal = FrontFace ? outwardNormal : -outwardNormal;
@@ -94,13 +94,13 @@ public class HittableList : Hittable
 
 public class Triangle : Hittable
 {
-    public readonly Vec3 P0, P1, P2;
+    public readonly Vector3 P0, P1, P2;
     public readonly Material Material;
 
     private readonly Box3 BoundingBox;
-    private readonly Vec3 N;
+    private readonly Vector3 N;
 
-    public Triangle(Vec3 p0, Vec3 p1, Vec3 p2, Material material)
+    public Triangle(Vector3 p0, Vector3 p1, Vector3 p2, Material material)
     {
         P0 = p0;
         P1 = p1;
@@ -170,11 +170,11 @@ public class Triangle : Hittable
 
 public class Sphere : Hittable
 {
-    public Vec3 Center;
+    public Vector3 Center;
     public float Radius;
     public Material Material;
 
-    public Sphere(Vec3 center, float radius, Material material)
+    public Sphere(Vector3 center, float radius, Material material)
     {
         Center = center;
         Radius = radius;
@@ -192,9 +192,9 @@ public class Sphere : Hittable
         Metrics.EventRaySphere();
 
         var oc = r.Origin - Center;
-        var a = r.Direction.LengthSquared;
+        var a = r.Direction.LengthSquared();
         var halfB = Dot(oc, r.Direction);
-        var c = oc.LengthSquared - Radius * Radius;
+        var c = oc.LengthSquared() - Radius * Radius;
 
         var discriminant = halfB * halfB - a * c;
         if (discriminant < 0)

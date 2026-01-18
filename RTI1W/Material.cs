@@ -7,15 +7,15 @@ public abstract class Material
 
 public struct ScatterRecord
 {
-    public Vec3 Attenuation;
+    public Vector3 Attenuation;
     public Ray Scattered;
 }
 
 public class Lambertian : Material
 {
-    public Vec3 Albedo;
+    public Vector3 Albedo;
 
-    public Lambertian(Vec3 albedo)
+    public Lambertian(Vector3 albedo)
     {
         Albedo = albedo;
     }
@@ -24,7 +24,7 @@ public class Lambertian : Material
     {
         var scatterDirection = rec.Normal + RandomUnitVector();
 
-        if (scatterDirection.IsNearZero())
+        if (IsNearZero(scatterDirection))
         {
             scatterDirection = rec.Normal;
         }
@@ -39,10 +39,10 @@ public class Lambertian : Material
 
 public class Metal : Material
 {
-    public Vec3 Albedo;
+    public Vector3 Albedo;
     public float Fuzz;
 
-    public Metal(Vec3 albedo, float fuzz)
+    public Metal(Vector3 albedo, float fuzz)
     {
         Albedo = albedo;
         Fuzz = fuzz < 1 ? fuzz : 1;
@@ -77,7 +77,7 @@ public class Dielectric : Material
         var sinTheta = Sqrt(1.0f - cosTheta * cosTheta);
 
         var cannotRefract = reflectionRatio * sinTheta > 1;
-        Vec3 direction;
+        Vector3 direction;
         if (cannotRefract || Reflectance(cosTheta, reflectionRatio) > RandomValue())
         {
             direction = Reflect(unitDirection, rec.Normal);

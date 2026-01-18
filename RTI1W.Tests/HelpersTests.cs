@@ -1,6 +1,7 @@
 global using static RTI1W.Helpers;
 global using static System.Math;
 using System;
+using System.Numerics;
 
 [assembly: Parallelize]
 
@@ -30,7 +31,7 @@ public class HelpersTests
         Assert.AreEqual(expectedIntersects, intersects);
     }
 
-    private static Vec3 ParseVec3(string s)
+    private static Vector3 ParseVec3(string s)
     {
         var span = s.AsSpan();
         Span<Range> ranges = stackalloc Range[3];
@@ -52,7 +53,7 @@ public class HelpersTests
             var item = RandomInUnitCircle();
 
             // Assert
-            Assert.IsLessThan(1, item.LengthSquared);
+            Assert.IsLessThan(1, item.LengthSquared());
         }
     }
 
@@ -94,7 +95,7 @@ public class HelpersTests
             var item = RandomInUnitSphere();
 
             // Assert
-            Assert.IsLessThan(1, item.LengthSquared);
+            Assert.IsLessThan(1, item.LengthSquared());
         }
     }
 

@@ -2,37 +2,37 @@
 
 public static class Helpers
 {
-    public static Vec3 C3(float x, float y, float z)
+    public static Vector3 C3(float x, float y, float z)
     {
-        return new Vec3(x, y, z);
+        return new Vector3(x, y, z);
     }
 
-    public static Vec3 P3(float x, float y, float z)
+    public static Vector3 P3(float x, float y, float z)
     {
-        return new Vec3(x, y, z);
+        return new Vector3(x, y, z);
     }
 
-    public static Vec3 V3(float x, float y, float z)
+    public static Vector3 V3(float x, float y, float z)
     {
-        return new Vec3(x, y, z);
+        return new Vector3(x, y, z);
     }
 
-    public static float Dot(Vec3 a, Vec3 b)
+    public static float Dot(Vector3 a, Vector3 b)
     {
         return a.X * b.X + a.Y * b.Y + a.Z * b.Z;
     }
 
-    public static Vec3 Cross(Vec3 a, Vec3 b)
+    public static Vector3 Cross(Vector3 a, Vector3 b)
     {
-        return new Vec3(
+        return new Vector3(
             a.Y * b.Z - a.Z * b.Y,
             a.Z * b.X - a.X * b.Z,
             a.X * b.Y - a.Y * b.X);
     }
 
-    public static Vec3 UnitVector(Vec3 a)
+    public static Vector3 UnitVector(Vector3 a)
     {
-        return a / a.Length;
+        return a / a.Length();
     }
 
     public static float DegreesToRadians(float deg)
@@ -65,17 +65,17 @@ public static class Helpers
         return min + (max - min) * RandomValue();
     }
 
-    public static Vec3 RandomVec3()
+    public static Vector3 RandomVector3()
     {
         return V3(RandomValue(), RandomValue(), RandomValue());
     }
 
-    public static Vec3 RandomVec3(float min, float max)
+    public static Vector3 RandomVector3(float min, float max)
     {
         return V3(RandomValue(min, max), RandomValue(min, max), RandomValue(min, max));
     }
 
-    public static Vec3 RandomInUnitSphere()
+    public static Vector3 RandomInUnitSphere()
     {
         var r = Pow(RandomValue(), 1.0f / 3.0f);
         var theta = RandomValue(0, Tau);
@@ -84,19 +84,19 @@ public static class Helpers
         return V3(r * sinPhi * Cos(theta), r * sinPhi * Sin(theta), r * Cos(phi));
     }
 
-    public static Vec3 RandomInUnitCircle()
+    public static Vector3 RandomInUnitCircle()
     {
         var theta = RandomValue(0, Tau);
         var dist = Sqrt(RandomValue());
         return V3(dist * Cos(theta), dist * Sin(theta), 0);
     }
 
-    public static Vec3 RandomUnitVector()
+    public static Vector3 RandomUnitVector()
     {
-        return UnitVector(RandomVec3());
+        return UnitVector(RandomVector3());
     }
 
-    public static Vec3 RandomInHemisphere(Vec3 normal)
+    public static Vector3 RandomInHemisphere(Vector3 normal)
     {
         var inUnitSphere = RandomInUnitSphere();
         if (Dot(inUnitSphere, normal) > 0)
@@ -106,24 +106,24 @@ public static class Helpers
         return -inUnitSphere;
     }
 
-    public static Vec3 Reflect(Vec3 v, Vec3 n)
+    public static Vector3 Reflect(Vector3 v, Vector3 n)
     {
         return v - 2 * Dot(v, n) * n;
     }
 
-    public static Vec3 Refract(Vec3 uv, Vec3 n, float etaiOverEtat)
+    public static Vector3 Refract(Vector3 uv, Vector3 n, float etaiOverEtat)
     {
         var cosTheta = Min(Dot(-uv, n), 1.0f);
         var rOutPerp = etaiOverEtat * (uv + cosTheta * n);
-        var rOutParallel = -Sqrt(Abs(1 - rOutPerp.LengthSquared)) * n;
+        var rOutParallel = -Sqrt(Abs(1 - rOutPerp.LengthSquared())) * n;
         return rOutPerp + rOutParallel;
     }
 
-    public static Vec3 ColorBlack => C3(0, 0, 0);
-    public static Vec3 ColorWhite => C3(1, 1, 1);
-    public static Vec3 ColorRed => C3(1, 0, 0);
-    public static Vec3 ColorGreen => C3(0, 1, 0);
-    public static Vec3 ColorBlue => C3(0, 0, 1);
+    public static Vector3 ColorBlack => C3(0, 0, 0);
+    public static Vector3 ColorWhite => C3(1, 1, 1);
+    public static Vector3 ColorRed => C3(1, 0, 0);
+    public static Vector3 ColorGreen => C3(0, 1, 0);
+    public static Vector3 ColorBlue => C3(0, 0, 1);
 
     public static float Lerp(float t, float v1, float v2)
     {
@@ -134,6 +134,12 @@ public static class Helpers
     {
         const float S = 1e-8f;
         return Abs(v) < S;
+    }
+
+    public static bool IsNearZero(Vector3 v)
+    {
+        const float S = 1e-8f;
+        return Abs(v.X) < S && Abs(v.Y) < S && Abs(v.Z) < S;
     }
 
     public static bool IntersectRayBox(Ray ray, Box3 box)

@@ -2,8 +2,8 @@
 
 public struct Box3 : IEquatable<Box3>
 {
-    public Vec3 Min;
-    public Vec3 Max;
+    public Vector3 Min;
+    public Vector3 Max;
 
     public Box3()
     {
@@ -13,12 +13,12 @@ public struct Box3 : IEquatable<Box3>
         Max = V3(minVal, minVal, minVal);
     }
 
-    public Box3(Vec3 p)
+    public Box3(Vector3 p)
     {
         Min = Max = p;
     }
 
-    public Box3(Vec3 p1, Vec3 p2)
+    public Box3(Vector3 p1, Vector3 p2)
     {
         Min = V3(Min(p1.X, p2.X), Min(p1.Y, p2.Y), Min(p1.Z, p2.Z));
         Max = V3(Max(p1.X, p2.X), Max(p1.Y, p2.Y), Max(p1.Z, p2.Z));
@@ -49,18 +49,18 @@ public struct Box3 : IEquatable<Box3>
         return Min.GetHashCode() ^ Max.GetHashCode();
     }
 
-    public bool Contains(Vec3 p)
+    public bool Contains(Vector3 p)
     {
         return Min.X <= p.X && Min.Y <= p.Y && Min.Z <= p.Z &&
             p.X <= Max.X && p.Y <= Max.Y && p.Z <= Max.Z;
     }
 
-    public Vec3 GetSize()
+    public Vector3 GetSize()
     {
         return Max - Min;
     }
 
-    public Vec3 GetMiddle()
+    public Vector3 GetMiddle()
     {
         return Min + GetSize() / 2;
     }
@@ -71,7 +71,7 @@ public struct Box3 : IEquatable<Box3>
         return size.X * size.Y * size.Z;
     }
 
-    public Vec3 Lerp(Vec3 t)
+    public Vector3 Lerp(Vector3 t)
     {
         return V3(
             Helpers.Lerp(t.X, Min.X, Max.X),

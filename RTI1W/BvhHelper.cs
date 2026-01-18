@@ -16,7 +16,7 @@ public class BvhHelper
         return CreateBvh(span);
     }
 
-    private record class NodeInfo(Hittable Hittable, Box3 Bounds, Vec3 Middle);
+    private record class NodeInfo(Hittable Hittable, Box3 Bounds, Vector3 Middle);
 
     private static BvhHittable CreateBvh(Span<NodeInfo> span)
     {
