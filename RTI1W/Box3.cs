@@ -7,10 +7,8 @@ public struct Box3 : IEquatable<Box3>
 
     public Box3()
     {
-        var minVal = float.MinValue;
-        var maxVal = float.MaxValue;
-        Min = V3(maxVal, maxVal, maxVal);
-        Max = V3(minVal, minVal, minVal);
+        Min = new Vector3(float.MaxValue);
+        Max = new Vector3(float.MinValue);
     }
 
     public Box3(Vector3 p)
@@ -20,8 +18,8 @@ public struct Box3 : IEquatable<Box3>
 
     public Box3(Vector3 p1, Vector3 p2)
     {
-        Min = V3(Min(p1.X, p2.X), Min(p1.Y, p2.Y), Min(p1.Z, p2.Z));
-        Max = V3(Max(p1.X, p2.X), Max(p1.Y, p2.Y), Max(p1.Z, p2.Z));
+        Min = Vector3.Min(p1, p2);
+        Max = Vector3.Max(p1, p2);
     }
 
     public bool Equals(Box3 other)
@@ -78,23 +76,25 @@ public struct Box3 : IEquatable<Box3>
 
     public static Box3 Union(Box3 b1, Box3 b2)
     {
-        return new Box3(
-            V3(Min(b1.Min.X, b2.Min.X), Min(b1.Min.Y, b2.Min.Y), Min(b1.Min.Z, b2.Min.Z)),
-            V3(Max(b1.Max.X, b2.Max.X), Max(b1.Max.Y, b2.Max.Y), Max(b1.Max.Z, b2.Max.Z)));
+        return new Box3()
+        {
+            Min = Vector3.Min(b1.Min, b2.Min),
+            Max = Vector3.Max(b1.Max, b2.Max),
+        };
     }
 
     public static Box3 Intersect(Box3 b1, Box3 b2)
     {
-        return new Box3(
-            V3(Max(b1.Min.X, b2.Min.X), Max(b1.Min.Y, b2.Min.Y), Max(b1.Min.Z, b2.Min.Z)),
-            V3(Min(b1.Max.X, b2.Max.X), Min(b1.Max.Y, b2.Max.Y), Min(b1.Max.Z, b2.Max.Z)));
+        return new Box3()
+        {
+            Min = Vector3.Max(b1.Min, b2.Min),
+            Max = Vector3.Min(b1.Max, b2.Max),
+        };
     }
 
     public static bool Overlaps(Box3 b1, Box3 b2)
     {
-        return
-            b1.Max.X >= b2.Min.X && b1.Min.X <= b2.Max.X &&
-            b1.Max.Y >= b2.Min.Y && b1.Min.Y <= b2.Max.Y &&
-            b1.Max.Z >= b2.Min.Z && b1.Min.Z <= b2.Max.Z;
+        return Vector3.GreaterThanOrEqualAll(b1.Max, b2.Min) &&
+            Vector3.LessThanOrEqualAll(b1.Min, b2.Max);
     }
 }
