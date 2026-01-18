@@ -38,8 +38,7 @@ var optWidth = addOption("--width", "Output image width", 192);
 var optHeight = addOption("--height", "Output image height", 128);
 var optSamples = addOption("--samples", "Samples per pixel", 100);
 var optMaxDepth = addOption("--max-depth", "Max depth / bounces per ray", 30);
-var optRunMode = addOption("--run-mode", "Run mode", RunMode.ParallelFor);
-var optRunNum = addOption("--run-num", "Run parallel count", 4);
+var optThreads = addOption("--threads", "Number of parallel threads", 4);
 var optNoBvh = addOption("--no-bvh", "Do not use the BVH (makes it much slower)", false);
 var optSeed = addOption("--seed", "Random seed (advanced use for testing)", 0);
 var optOpen = addOption("--open", "Open output image at end", false);
@@ -76,8 +75,7 @@ var imageWidth = parseResult.GetValue(optWidth);
 var imageHeight = parseResult.GetValue(optHeight);
 var samplesPerPixel = parseResult.GetValue(optSamples);
 var maxDepth = parseResult.GetValue(optMaxDepth);
-var runMode = parseResult.GetValue(optRunMode);
-var runNum = parseResult.GetValue(optRunNum);
+var numThreads = parseResult.GetValue(optThreads);
 var useBVH = !parseResult.GetValue(optNoBvh);
 var openOutput = parseResult.GetValue(optOpen);
 
@@ -120,40 +118,28 @@ var scanlinesRemaining = imageHeight;
 Metrics.StartTimer("Render");
 
 
-if (runMode == RunMode.Sequential)
+if (numThreads == 1)
 {
     for (var i = 0; i < imageHeight; i += 1)
     {
         Scanline(i);
     }
 }
-else if (runMode == RunMode.ParallelFor)
+else
 {
-    var parallelOpts = new ParallelOptions()
-    {
-        MaxDegreeOfParallelism = runNum,
-    };
-    Parallel.For(0, imageHeight, parallelOpts, Scanline);
-}
-else if (runMode == RunMode.Tasks)
-{
-    var tasks = new Task[runNum];
-    for (var i = 0; i < runNum; i++)
+    var tasks = new Task[numThreads];
+    for (var i = 0; i < numThreads; i++)
     {
         var localIdx = i;
         tasks[localIdx] = Task.Run(() =>
         {
-            for (var j = localIdx; j < imageHeight; j += runNum)
+            for (var j = localIdx; j < imageHeight; j += numThreads)
             {
                 Scanline(j);
             }
         });
     }
     Task.WaitAll(tasks);
-}
-else
-{
-    throw new InvalidOperationException();
 }
 
 void Scanline(int j)
@@ -348,13 +334,6 @@ Hittable RandomScene()
     {
         return world;
     }
-}
-
-enum RunMode
-{
-    Sequential,
-    Tasks,
-    ParallelFor,
 }
 
 enum Verbosity
