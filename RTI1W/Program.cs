@@ -63,15 +63,6 @@ rootCommand.Validators.Add(result =>
     }
 });
 
-// Ensure --seed is not specified with any multithreading modes (massive performance issues)
-rootCommand.Validators.Add(result =>
-{
-    if (result.GetValue(optRunMode) != RunMode.Sequential && result.GetValue(optSeed) != 0)
-    {
-        result.AddError($"{optSeed.Name} can only be specified with '{optRunMode.Name} {RunMode.Sequential}'");
-    }
-});
-
 var parseResult = rootCommand.Parse(args);
 
 if (parseResult.Errors.Count > 0 ||
@@ -96,12 +87,7 @@ else if (parseResult.GetValue(optVerbose)) verbosity = Verbosity.Diagnostic;
 else verbosity = parseResult.GetValue(optVerbosity);
 
 Metrics.ActiveEvents = verbosity >= Verbosity.Diagnostic;
-
-var seed = parseResult.GetValue(optSeed);
-if (seed != 0)
-{
-    RandomDeterministic = new Random(seed);
-}
+RandomSeed = parseResult.GetValue(optSeed);
 
 //
 // World

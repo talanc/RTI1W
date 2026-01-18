@@ -40,15 +40,21 @@ public static class Helpers
         return deg * PI / 180;
     }
 
-    // Useful for deterministic testing...
-    public static Random? RandomDeterministic { get; set; }
+    // Useful for deterministic testing (0 means its not used)
+    public static int RandomSeed { get; set; } = 0;
+
+    private static readonly ThreadLocal<Random> randomLocal = new(() => new Random(RandomSeed));
 
     /// <summary>
     /// Returns a value between [0.0, 1.0)
     /// </summary>
     public static double RandomDouble()
     {
-        return (RandomDeterministic ?? Random.Shared).NextDouble();
+        if (RandomSeed != 0)
+        {
+            return randomLocal.Value!.NextDouble();
+        }
+        return Random.Shared.NextDouble();
     }
 
     /// <summary>
