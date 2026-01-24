@@ -4,6 +4,8 @@ public class BvhHelper
 {
     public static BvhHittable CreateBvh(List<Hittable> hittables)
     {
+        ArgumentOutOfRangeException.ThrowIfLessThan(hittables.Count, 2, nameof(hittables));
+
         var hittableBoxArr = new NodeInfo[hittables.Count];
         for (var i = 0; i < hittableBoxArr.Length; i++)
         {
@@ -13,12 +15,12 @@ public class BvhHelper
         }
 
         var span = new Span<NodeInfo>(hittableBoxArr);
-        return CreateBvh(span);
+        return (BvhHittable)CreateBvh(span);
     }
 
     private record class NodeInfo(Hittable Hittable, Box3 Bounds, Vector3 Middle);
 
-    private static BvhHittable CreateBvh(Span<NodeInfo> span)
+    private static Hittable CreateBvh(Span<NodeInfo> span)
     {
         if (span.Length == 0)
         {
@@ -31,10 +33,9 @@ public class BvhHelper
             bounds = Box3.Union(bounds, span[i].Bounds);
         }
 
-        // TODO i think the RHS should be null to reduce Hit events
         if (span.Length == 1)
         {
-            return new BvhHittable(bounds, span[0].Hittable, span[0].Hittable);
+            return span[0].Hittable;
         }
 
         if (span.Length == 2)
