@@ -144,41 +144,43 @@ public static class Helpers
         return IntersectRayBox(ray, box, 0, float.PositiveInfinity);
     }
 
+    private static void Swap(ref float a, ref float b)
+    {
+        var temp = a;
+        a = b;
+        b = temp;
+    }
+
     public static bool IntersectRayBox(Ray ray, Box3 box, float tMin, float tMax)
     {
         // TODO i think this can use SIMD
 
         var t0v = box.Min - ray.Origin;
         var t1v = box.Max - ray.Origin;
+        var invDir = ray.InvDirection;
+        var t0 = t0v * invDir;
+        var t1 = t1v * invDir;
 
-        var invDirX = ray.InvDirection.X;
-        var t0x = t0v.X * invDirX;
-        var t1x = t1v.X * invDirX;
-        if (invDirX < 0) (t0x, t1x) = (t1x, t0x);
-        tMin = t0x > tMin ? t0x : tMin;
-        tMax = t1x < tMax ? t1x : tMax;
+        if (invDir.X < 0) Swap(ref t0.X, ref t1.X);
+        if (invDir.Y < 0) Swap(ref t0.Y, ref t1.Y);
+        if (invDir.Z < 0) Swap(ref t0.Z, ref t1.Z);
+
+        tMin = Max(tMin, t0.X);
+        tMax = Min(tMax, t1.X);
         if (tMax <= tMin)
         {
             return false;
         }
 
-        var invDirY = ray.InvDirection.Y;
-        var t0y = t0v.Y * invDirY;
-        var t1y = t1v.Y * invDirY;
-        if (invDirY < 0) (t0y, t1y) = (t1y, t0y);
-        tMin = t0y > tMin ? t0y : tMin;
-        tMax = t1y < tMax ? t1y : tMax;
+        tMin = Max(tMin, t0.Y);
+        tMax = Min(tMax, t1.Y);
         if (tMax <= tMin)
         {
             return false;
         }
 
-        var invDirZ = ray.InvDirection.Z;
-        var t0z = t0v.Z * invDirZ;
-        var t1z = t1v.Z * invDirZ;
-        if (invDirZ < 0) (t0z, t1z) = (t1z, t0z);
-        tMin = t0z > tMin ? t0z : tMin;
-        tMax = t1z < tMax ? t1z : tMax;
+        tMin = Max(tMin, t0.Z);
+        tMax = Min(tMax, t1.Z);
         if (tMax <= tMin)
         {
             return false;
