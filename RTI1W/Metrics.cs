@@ -4,7 +4,6 @@ namespace RTI1W;
 
 public static class Metrics
 {
-    private static readonly Stopwatch stopwatch = Stopwatch.StartNew();
     private static readonly List<MetricTime> metricTimers = [];
 
     public static bool ActiveEvents { get; set; }
@@ -33,26 +32,23 @@ public static class Metrics
     private class MetricTime
     {
         public required string Name { get; set; }
-        public required TimeSpan Start { get; set; }
-        public required TimeSpan Stop { get; set; }
-        public TimeSpan Elapsed => Stop - Start;
+        public required long Start { get; set; }
+        public TimeSpan Elapsed { get; set; }
     }
 
     public static void StartTimer(string name)
     {
-        var elapsed = stopwatch.Elapsed;
         MetricTime metric = new()
         {
             Name = name,
-            Start = elapsed,
-            Stop = elapsed
+            Start = Stopwatch.GetTimestamp(),
         };
         metricTimers.Add(metric);
     }
 
     public static void StopTimer()
     {
-        metricTimers.Last().Stop = stopwatch.Elapsed;
+        metricTimers.Last().Elapsed = Stopwatch.GetElapsedTime(metricTimers.Last().Start);
     }
 
     public static void Display()
