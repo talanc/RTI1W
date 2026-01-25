@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "RTI1W": {
+      "commandName": "Project",
+      "commandLineArgs": "--seed 100 --threads 1 --open"
+    }
+  }
+}

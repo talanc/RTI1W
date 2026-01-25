@@ -146,42 +146,23 @@ public static class Helpers
 
     private static void Swap(ref float a, ref float b)
     {
-        var temp = a;
-        a = b;
-        b = temp;
+        (b, a) = (a, b);
     }
 
     public static bool IntersectRayBox(Ray ray, Box3 box, float tMin, float tMax)
     {
-        // TODO i think this can use SIMD
-
-        var t0v = box.Min - ray.Origin;
-        var t1v = box.Max - ray.Origin;
         var invDir = ray.InvDirection;
-        var t0 = t0v * invDir;
-        var t1 = t1v * invDir;
+        var t0 = (box.Min - ray.Origin) * invDir;
+        var t1 = (box.Max - ray.Origin) * invDir;
 
         if (invDir.X < 0) Swap(ref t0.X, ref t1.X);
         if (invDir.Y < 0) Swap(ref t0.Y, ref t1.Y);
         if (invDir.Z < 0) Swap(ref t0.Z, ref t1.Z);
 
-        tMin = Max(tMin, t0.X);
-        tMax = Min(tMax, t1.X);
-        if (tMax <= tMin)
-        {
-            return false;
-        }
+        var tclose = Max(Max(t0.X, t0.Y), Max(t0.Z, tMin));
+        var tfar = Min(Min(t1.X, t1.Y), Min(t1.Z, tMax));
 
-        tMin = Max(tMin, t0.Y);
-        tMax = Min(tMax, t1.Y);
-        if (tMax <= tMin)
-        {
-            return false;
-        }
-
-        tMin = Max(tMin, t0.Z);
-        tMax = Min(tMax, t1.Z);
-        if (tMax <= tMin)
+        if (tfar <= tclose)
         {
             return false;
         }
