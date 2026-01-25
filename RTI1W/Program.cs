@@ -6,6 +6,7 @@ global using static System.MathF;
 using System.CommandLine;
 using System.CommandLine.Parsing;
 using System.Diagnostics;
+using System.Runtime.Intrinsics;
 
 //
 // Cmdline
@@ -87,6 +88,8 @@ else verbosity = parseResult.GetValue(optVerbosity);
 
 Metrics.ActiveEvents = verbosity >= Verbosity.Diagnostic;
 RandomSeed = parseResult.GetValue(optSeed);
+
+var samplesPerPixelInv = 1.0f / samplesPerPixel;
 
 //
 // World
@@ -253,18 +256,19 @@ Vector3 RayColor(Ray r, int depth)
 
 void SetPixel(int[] image, int x, int y, Vector3 pixelColor)
 {
-    var scale = 1.0f / samplesPerPixel;
+    var c = Vector3.SquareRoot(pixelColor * samplesPerPixelInv);
 
-    var cr = Sqrt(pixelColor.X * scale);
-    var cg = Sqrt(pixelColor.Y * scale);
-    var cb = Sqrt(pixelColor.Z * scale);
+    var rgb_f32 = 256 * Vector3.ClampNative(c, Vector3.Zero, new Vector3(0.999f));
+    var rgb_i32 = Vector128.ConvertToInt32Native(rgb_f32.AsVector128Unsafe());
 
-    var r = (int)(256 * Math.Clamp(cr, 0, 0.999));
-    var g = (int)(256 * Math.Clamp(cg, 0, 0.999));
-    var b = (int)(256 * Math.Clamp(cb, 0, 0.999));
+    var r = rgb_i32.GetElement(0);
+    var g = rgb_i32.GetElement(1);
+    var b = rgb_i32.GetElement(2);
+
+    var d = (r << 16) | (g << 8) | b;
 
     var i = x + (y * imageWidth);
-    var d = (r << 16) | (g << 8) | b;
+
     image[i] = d;
 }
 
