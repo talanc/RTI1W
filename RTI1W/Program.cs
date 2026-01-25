@@ -92,7 +92,9 @@ RandomSeed = parseResult.GetValue(optSeed);
 // World
 //
 
+Metrics.StartTimer("CreateScene");
 var world = RandomScene();
+Metrics.StopTimer();
 
 //
 // Camera

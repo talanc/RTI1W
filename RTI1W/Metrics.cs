@@ -67,7 +67,7 @@ public static class Metrics
         WriteLine("Timers:");
         foreach (var metric in metricTimers)
         {
-            WriteLine($"- {metric.Name}: {metric.Elapsed.TotalSeconds:F2} secs");
+            WriteLine($"- {metric.Name}: {metric.Elapsed.TotalSeconds:F3} secs");
         }
     }
 }
