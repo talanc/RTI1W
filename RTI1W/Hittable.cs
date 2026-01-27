@@ -2,7 +2,7 @@
 
 public abstract class Hittable
 {
-    public abstract HitRecord? Hit(Ray r, float tMin, float tMax);
+    public abstract bool Hit(Ray r, float tMin, float tMax, out HitRecord hit);
     public abstract Box3 GetBoundingBox();
 }
 
@@ -39,20 +39,31 @@ public class BvhHittable : Hittable
         return bounds;
     }
 
-    public override HitRecord? Hit(Ray r, float tMin, float tMax)
+    public override bool Hit(Ray r, float tMin, float tMax, out HitRecord hit)
     {
         Metrics.EventRayBvh();
 
         // Ignore if no intersection
         if (!IntersectRayBox(r, bounds, tMin, tMax))
         {
-            return null;
+            hit = default;
+            return false;
         }
 
-        var hitLeft = left.Hit(r, tMin, tMax);
-        var hitRight = right.Hit(r, tMin, hitLeft?.T ?? tMax);
+        if (left.Hit(r, tMin, tMax, out hit))
+        {
+            if (right.Hit(r, tMin, hit.T, out var hit2) && hit2.T < hit.T)
+            {
+                hit = hit2;
+            }
+            return true;
+        }
+        else if (right.Hit(r, tMin, tMax, out hit))
+        {
+            return true;
+        }
 
-        return hitRight ?? hitLeft;
+        return false;
     }
 }
 
@@ -69,22 +80,24 @@ public class HittableList : Hittable
         List.Add(hittable);
     }
 
-    public override HitRecord? Hit(Ray r, float tMin, float tMax)
+    public override bool Hit(Ray r, float tMin, float tMax, out HitRecord hit)
     {
-        HitRecord? rec = null;
+        hit = default;
+
+        var hasHit = false;
         var closestSoFar = tMax;
 
         foreach (var obj in List)
         {
-            var objRec = obj.Hit(r, tMin, closestSoFar);
-            if (objRec.HasValue)
+            if (obj.Hit(r, tMin, closestSoFar, out var objHit))
             {
-                rec = objRec;
-                closestSoFar = objRec.Value.T;
+                hasHit = true;
+                hit = objHit;
+                closestSoFar = objHit.T;
             }
         }
 
-        return rec;
+        return hasHit;
     }
 
     public override Box3 GetBoundingBox()
@@ -120,16 +133,18 @@ public class Triangle : Hittable
         return BoundingBox;
     }
 
-    public override HitRecord? Hit(Ray r, float tMin, float tMax)
+    public override bool Hit(Ray r, float tMin, float tMax, out HitRecord hit)
     {
         Metrics.EventRayTriangle();
+
+        hit = default;
 
         var d = -Dot(N, P0);
 
         var n_dot_v = Dot(N, r.Direction);
         if (IsNearZero(n_dot_v))
         {
-            return null;
+            return false;
         }
 
         var nom = Dot(N, r.Origin) + d;
@@ -137,7 +152,7 @@ public class Triangle : Hittable
         var t = -(nom / n_dot_v);
         if (t < tMin || t > tMax)
         {
-            return null;
+            return false;
         }
 
         var p = r.At(t);
@@ -151,17 +166,17 @@ public class Triangle : Hittable
         var test2 = Dot(N, Cross(e2, p - P2));
         if (test0 < 0 || test1 < 0 || test2 < 0)
         {
-            return null;
+            return false;
         }
 
-        var rec = new HitRecord()
+        hit = new HitRecord()
         {
             P = p,
             T = t,
             Material = Material,
         };
-        rec.SetFaceNormal(r, N);
-        return rec;
+        hit.SetFaceNormal(r, N);
+        return true;
     }
 }
 
@@ -184,9 +199,11 @@ public class Sphere : Hittable
         return new Box3(Center - half, Center + half);
     }
 
-    public override HitRecord? Hit(Ray r, float tMin, float tMax)
+    public override bool Hit(Ray r, float tMin, float tMax, out HitRecord hit)
     {
         Metrics.EventRaySphere();
+
+        hit = default;
 
         var oc = r.Origin - Center;
         var a = r.Direction.LengthSquared();
@@ -196,7 +213,7 @@ public class Sphere : Hittable
         var discriminant = halfB * halfB - a * c;
         if (discriminant < 0)
         {
-            return null;
+            return false;
         }
         var sqrtD = Sqrt(discriminant);
 
@@ -207,20 +224,21 @@ public class Sphere : Hittable
             root = (-halfB + sqrtD) / a;
             if (root < tMin || tMax < root)
             {
-                return null;
+                return false;
             }
         }
 
         var t = root;
         var p = r.At(t);
         var outwardNormal = (p - Center) / Radius;
-        var rec = new HitRecord()
+
+        hit = new HitRecord()
         {
             P = p,
             T = t,
             Material = Material,
         };
-        rec.SetFaceNormal(r, outwardNormal);
-        return rec;
+        hit.SetFaceNormal(r, outwardNormal);
+        return true;
     }
 }

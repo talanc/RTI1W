@@ -236,11 +236,9 @@ Vector3 RayColor(Ray r, int depth)
         return ColorBlack;
     }
 
-    var recMaybe = world.Hit(r, 0.001f, float.PositiveInfinity);
-    if (recMaybe.HasValue)
+    if (world.Hit(r, 0.001f, float.PositiveInfinity, out var hit))
     {
-        var hitRec = recMaybe.Value;
-        var matRecMaybe = hitRec.Material.Scatter(r, hitRec);
+        var matRecMaybe = hit.Material.Scatter(r, hit);
         if (matRecMaybe.HasValue)
         {
             var matRec = matRecMaybe.Value;
