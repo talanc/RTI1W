@@ -154,8 +154,41 @@ void Scanline(int j)
     {
         var id = lineIds[j] = Environment.CurrentManagedThreadId;
         var numLeft = Interlocked.Decrement(ref scanlinesRemaining);
-        var errStr = $"Id={id,-4}Elem={j,-5}NumLeft={numLeft}";
-        WriteLine(errStr);
+
+        // This is the same as:
+        //   WriteLine($"Id={id,-4}Elem={j,-5}NumLeft={numLeft}")
+        // But its allocation free!
+        Span<char> buf = stackalloc char[128];
+        var pos = 0;
+        Append(buf, ref pos, "Id", id, 4);
+        Append(buf, ref pos, "Elem", j, 5);
+        Append(buf, ref pos, "NumLeft", numLeft, 0);
+        WriteLine(buf[..pos]);
+
+        static void Append(Span<char> buf, ref int pos, string name, int value, int valuePadding)
+        {
+            // Name
+            name.AsSpan().CopyTo(buf[pos..]);
+            pos += name.Length;
+
+            // =
+            buf[pos] = '=';
+            pos++;
+
+            // Value
+            value.TryFormat(buf[pos..], out var w);
+            pos += w;
+
+            // Padding
+            if (w < valuePadding)
+            {
+                for (var p = 0; p < valuePadding - w; p++)
+                {
+                    buf[pos] = ' ';
+                    pos++;
+                }
+            }
+        }
     }
 
     var pixY = imageHeight - 1 - j;
