@@ -117,7 +117,11 @@ var camera = new Camera(lookFrom, lookAt, vUp, 20, aspectRatio, aperture, distTo
 
 var image = new int[imageWidth * imageHeight];
 
-var lineIds = new int[imageHeight];
+int[] scanlinesCompleted = [];
+if (verbosity >= Verbosity.Normal)
+{
+    scanlinesCompleted = new int[numThreads];
+}
 
 var scanlinesRemaining = imageHeight;
 
@@ -128,7 +132,7 @@ if (numThreads == 1)
 {
     for (var i = 0; i < imageHeight; i += 1)
     {
-        Scanline(i);
+        Scanline(0, i);
     }
 }
 else
@@ -141,18 +145,19 @@ else
         {
             for (var j = localIdx; j < imageHeight; j += numThreads)
             {
-                Scanline(j);
+                Scanline(localIdx, j);
             }
         });
     }
     Task.WaitAll(tasks);
 }
 
-void Scanline(int j)
+void Scanline(int threadId, int j)
 {
     if (verbosity >= Verbosity.Normal)
     {
-        var id = lineIds[j] = Environment.CurrentManagedThreadId;
+        scanlinesCompleted[threadId]++;
+
         var numLeft = Interlocked.Decrement(ref scanlinesRemaining);
 
         // This is the same as:
@@ -160,7 +165,7 @@ void Scanline(int j)
         // But its allocation free!
         Span<char> buf = stackalloc char[128];
         var pos = 0;
-        Append(buf, ref pos, "Id", id, 4);
+        Append(buf, ref pos, "Id", threadId, 4);
         Append(buf, ref pos, "Elem", j, 5);
         Append(buf, ref pos, "NumLeft", numLeft, 0);
         WriteLine(buf[..pos]);
@@ -245,9 +250,9 @@ Metrics.Display();
 if (verbosity >= Verbosity.Normal)
 {
     WriteLine($"Scanlines:");
-    foreach (var lineId in lineIds.GroupBy(curr => curr))
+    for (var i = 0; i < scanlinesCompleted.Length; i++)
     {
-        WriteLine($"- {lineId.Key}: {lineId.Count()}");
+        WriteLine($"- Thread {i}: {scanlinesCompleted[i]}");
     }
 }
 
