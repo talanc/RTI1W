@@ -45,12 +45,20 @@ public static class BvhHelper
             return CreateHittableList(nodes);
         }
 
-        nodes.Sort((a, b) => a.Middle[axis].CompareTo(b.Middle[axis]));
-
-        var p = 1;
-        while (p < nodes.Length && nodes[p].Middle[axis] < pos)
+        // partition nodes by <pos, RHS starts at p
+        var p = 0;
+        var q = nodes.Length - 1;
+        while (p <= q)
         {
-            p++;
+            if (nodes[p].Middle[axis] < pos)
+            {
+                p++;
+            }
+            else
+            {
+                (nodes[q], nodes[p]) = (nodes[p], nodes[q]);
+                q--;
+            }
         }
 
         var leftNodes = nodes.Slice(0, p);
