@@ -26,12 +26,14 @@ public class BvhHittable : Hittable
     private readonly Box3 bounds;
     private readonly Hittable left;
     private readonly Hittable right;
+    private readonly int axis;
 
-    public BvhHittable(Box3 bounds, Hittable left, Hittable right)
+    public BvhHittable(Box3 bounds, Hittable left, Hittable right, int axis)
     {
         this.bounds = bounds;
         this.left = left;
         this.right = right;
+        this.axis = axis;
     }
 
     public override Box3 GetBoundingBox()
@@ -50,15 +52,17 @@ public class BvhHittable : Hittable
             return false;
         }
 
-        if (left.Hit(r, tMin, tMax, out hit))
+        var (a, b) = r.Direction[axis] < 0 ? (right, left) : (left, right);
+
+        if (a.Hit(r, tMin, tMax, out hit))
         {
-            if (right.Hit(r, tMin, hit.T, out var hit2) && hit2.T < hit.T)
+            if (b.Hit(r, tMin, hit.T, out var hit2) && hit2.T < hit.T)
             {
                 hit = hit2;
             }
             return true;
         }
-        else if (right.Hit(r, tMin, tMax, out hit))
+        else if (b.Hit(r, tMin, tMax, out hit))
         {
             return true;
         }

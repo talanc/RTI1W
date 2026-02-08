@@ -67,7 +67,7 @@ public static class BvhHelper
         var left = CreateBvh(leftNodes, depth + 1);
         var right = CreateBvh(rightNodes, depth + 1);
 
-        var sah = new BvhHittable(bounds, left, right);
+        var sah = new BvhHittable(bounds, left, right, axis);
 
         return sah;
     }
