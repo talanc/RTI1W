@@ -2,8 +2,8 @@
 
 public abstract class Hittable
 {
+    public Box3 Bounds;
     public abstract bool Hit(Ray r, float tMin, float tMax, out HitRecord hit);
-    public abstract Box3 GetBoundingBox();
 }
 
 public struct HitRecord
@@ -23,22 +23,16 @@ public struct HitRecord
 
 public class BvhHittable : Hittable
 {
-    private readonly Box3 bounds;
-    private readonly Hittable left;
-    private readonly Hittable right;
-    private readonly int axis;
+    public readonly Hittable Left;
+    public readonly Hittable Right;
+    public readonly int Axis;
 
     public BvhHittable(Box3 bounds, Hittable left, Hittable right, int axis)
     {
-        this.bounds = bounds;
-        this.left = left;
-        this.right = right;
-        this.axis = axis;
-    }
-
-    public override Box3 GetBoundingBox()
-    {
-        return bounds;
+        Bounds = bounds;
+        Left = left;
+        Right = right;
+        Axis = axis;
     }
 
     public override bool Hit(Ray r, float tMin, float tMax, out HitRecord hit)
@@ -46,13 +40,13 @@ public class BvhHittable : Hittable
         Metrics.EventRayBvh();
 
         // Ignore if no intersection
-        if (!IntersectRayBox(r, bounds, tMin, tMax))
+        if (!IntersectRayBox(r, Bounds, tMin, tMax))
         {
             hit = default;
             return false;
         }
 
-        var (a, b) = r.Direction[axis] < 0 ? (right, left) : (left, right);
+        var (a, b) = r.Direction[Axis] < 0 ? (Right, Left) : (Left, Right);
 
         if (a.Hit(r, tMin, tMax, out hit))
         {
@@ -74,12 +68,10 @@ public class BvhHittable : Hittable
 public class HittableList : Hittable
 {
     public List<Hittable> List = new();
-    private Box3 BoundingBox;
 
     public void Add(Hittable hittable)
     {
-        var hittableBox = hittable.GetBoundingBox();
-        BoundingBox = Box3.Union(BoundingBox, hittableBox);
+        Bounds = Box3.Union(Bounds, hittable.Bounds);
 
         List.Add(hittable);
     }
@@ -103,11 +95,6 @@ public class HittableList : Hittable
 
         return hasHit;
     }
-
-    public override Box3 GetBoundingBox()
-    {
-        return BoundingBox;
-    }
 }
 
 public class Triangle : Hittable
@@ -115,7 +102,6 @@ public class Triangle : Hittable
     public readonly Vector3 P0, P1, P2;
     public readonly Material Material;
 
-    private readonly Box3 BoundingBox;
     private readonly Vector3 N;
 
     public Triangle(Vector3 p0, Vector3 p1, Vector3 p2, Material material)
@@ -127,14 +113,9 @@ public class Triangle : Hittable
 
         var min = Vector3.Min(Vector3.Min(p0, p1), p2);
         var max = Vector3.Max(Vector3.Max(p0, p1), p2);
-        BoundingBox = new Box3(min, max);
+        Bounds = new Box3(min, max);
 
         N = Cross(p1 - p0, p2 - p0);
-    }
-
-    public override Box3 GetBoundingBox()
-    {
-        return BoundingBox;
     }
 
     public override bool Hit(Ray r, float tMin, float tMax, out HitRecord hit)
@@ -195,12 +176,10 @@ public class Sphere : Hittable
         Center = center;
         Radius = radius;
         Material = material;
-    }
 
-    public override Box3 GetBoundingBox()
-    {
-        var half = new Vector3(Radius);
-        return new Box3(Center - half, Center + half);
+        var half = new Vector3(radius);
+        Bounds.Min = Center - half;
+        Bounds.Max = Center + half;
     }
 
     public override bool Hit(Ray r, float tMin, float tMax, out HitRecord hit)

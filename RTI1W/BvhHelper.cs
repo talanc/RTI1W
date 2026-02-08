@@ -12,7 +12,7 @@ public static class BvhHelper
         for (var i = 0; i < hittables.Count; i++)
         {
             var h = hittables[i];
-            nodes[i] = new NodeInfo(h, h.GetBoundingBox(), h.GetBoundingBox().Middle());
+            nodes[i] = new NodeInfo(h, h.Bounds, h.Bounds.Middle());
         }
 
         return (BvhHittable)CreateBvh(nodes, 0);
@@ -180,4 +180,3 @@ public static class BvhHelper
         return true;
     }
 }
-
