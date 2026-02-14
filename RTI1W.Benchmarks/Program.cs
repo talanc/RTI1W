@@ -92,7 +92,12 @@ public class IntersectRayBoxBenchmarks
         if (t1.Z < tfar) tfar = t1.Z;
         if (tMax < tfar) tfar = tMax;
 
-        return tfar > tclose;
+        if (tfar <= tclose)
+        {
+            return false;
+        }
+
+        return true;
     }
 }
 
