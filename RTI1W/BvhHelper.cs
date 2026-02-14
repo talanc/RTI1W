@@ -74,12 +74,12 @@ public static class BvhHelper
 
     private static HittableList CreateHittableList(Span<NodeInfo> nodes)
     {
-        var list = new HittableList();
+        var list = new List<Hittable>();
         foreach (var node in nodes)
         {
             list.Add(node.Hittable);
         }
-        return list;
+        return new HittableList(list);
     }
 
     private const float TraverseCost = 0.5f;

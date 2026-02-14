@@ -67,13 +67,17 @@ public class BvhHittable : Hittable
 
 public class HittableList : Hittable
 {
-    public List<Hittable> List = new();
+    public List<Hittable> List;
 
-    public void Add(Hittable hittable)
+    public HittableList(List<Hittable> list)
     {
-        Bounds = Box3.Union(Bounds, hittable.Bounds);
+        List = list;
 
-        List.Add(hittable);
+        Bounds = list[0].Bounds;
+        for (int i = 1; i < list.Count; i++)
+        {
+            Bounds = Box3.Union(list[i].Bounds, Bounds);
+        }
     }
 
     public override bool Hit(Ray r, float tMin, float tMax, out HitRecord hit)

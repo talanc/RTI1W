@@ -41,7 +41,7 @@ var optHeight = addOption("--height", "Output image height", 128);
 var optSamples = addOption("--samples", "Samples per pixel", 100);
 var optMaxDepth = addOption("--max-depth", "Max depth / bounces per ray", 30);
 var optThreads = addOption("--threads", "Number of parallel threads", 4);
-var optNoBvh = addOption("--no-bvh", "Do not use the BVH (makes it much slower)", false);
+var optBvh = addOption("--bvh", "Bounding volume hierarchy structure", BvhMode.Tree);
 var optSeed = addOption("--seed", "Random seed (advanced use for testing)", 0);
 var optOpen = addOption("--open", "Open output image at end", false);
 var optVerbosity = addOption("--verbosity", "Verbosity output mode", Verbosity.Normal);
@@ -78,7 +78,7 @@ var imageHeight = parseResult.GetValue(optHeight);
 var samplesPerPixel = parseResult.GetValue(optSamples);
 var maxDepth = parseResult.GetValue(optMaxDepth);
 var numThreads = parseResult.GetValue(optThreads);
-var useBVH = !parseResult.GetValue(optNoBvh);
+var bvh = parseResult.GetValue(optBvh);
 var openOutput = parseResult.GetValue(optOpen);
 
 Verbosity verbosity;
@@ -310,7 +310,7 @@ void SetPixel(int[] image, int x, int y, Vector3 pixelColor)
 
 Hittable RandomScene()
 {
-    var world = new HittableList();
+    var world = new List<Hittable>();
 
     var matGround = new Lambertian(C3(0.5f, 0.5f, 0.5f));
     world.Add(new Sphere(P3(0, -1000, 0), 1000, matGround));
@@ -368,14 +368,21 @@ Hittable RandomScene()
     var material4 = new Lambertian(ColorRed);
     world.Add(new Triangle(t0, t1, t2, material4));
 
-    if (useBVH)
+    switch (bvh)
     {
-        var bvhHittable = BvhHelper.CreateBvh(world.List);
-        return bvhHittable;
-    }
-    else
-    {
-        return world;
+        case BvhMode.Tree:
+            var bvhHittable = BvhHelper.CreateBvh(world);
+            return bvhHittable;
+        
+        case BvhMode.Linear:
+            var linearBvhHittable = LinearBvhHelper.CreateLinearBvh(world);
+            return linearBvhHittable;
+
+        case BvhMode.None:
+            return new HittableList(world);
+
+        default:
+            throw new NotImplementedException();
     }
 }
 
@@ -384,4 +391,11 @@ enum Verbosity
     Normal = 0,
     Diagnostic = 1,
     Quiet = -1,
+}
+
+enum BvhMode
+{
+    Tree = 0,
+    Linear = 1,
+    None = -1
 }
