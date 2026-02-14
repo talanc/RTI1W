@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Runtime.CompilerServices;
 
 namespace RTI1W;
 
@@ -13,7 +12,6 @@ public static class Metrics
     {
         activeEvents = true;
     }
-
 
     private static long numRayBvh = 0;
 
