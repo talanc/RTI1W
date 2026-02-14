@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace RTI1W;
 
@@ -6,26 +7,36 @@ public static class Metrics
 {
     private static readonly List<MetricTime> metricTimers = [];
 
-    public static bool ActiveEvents { get; set; }
+    private static bool activeEvents = false;
+
+    public static void ActivateEvents()
+    {
+        activeEvents = true;
+    }
+
 
     private static long numRayBvh = 0;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void EventRayBvh()
     {
-        if (!ActiveEvents) return;
+        if (!activeEvents) return;
         Interlocked.Increment(ref numRayBvh);
     }
 
     private static long numRaySphere = 0;
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void EventRaySphere()
     {
-        if (!ActiveEvents) return;
+        if (!activeEvents) return;
         Interlocked.Increment(ref numRaySphere);
     }
 
     private static long numRayTriangle = 0;
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void EventRayTriangle()
     {
-        if (!ActiveEvents) return;
+        if (!activeEvents) return;
         Interlocked.Increment(ref numRayTriangle);
     }
 
@@ -53,7 +64,7 @@ public static class Metrics
 
     public static void Display()
     {
-        if (ActiveEvents)
+        if (activeEvents)
         {
             WriteLine("Events:");
             WriteLine($"- Ray-BVH: {numRayBvh:N0}");

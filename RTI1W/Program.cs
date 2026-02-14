@@ -86,7 +86,7 @@ if (parseResult.GetValue(optQuiet)) verbosity = Verbosity.Quiet;
 else if (parseResult.GetValue(optVerbose)) verbosity = Verbosity.Diagnostic;
 else verbosity = parseResult.GetValue(optVerbosity);
 
-Metrics.ActiveEvents = verbosity >= Verbosity.Diagnostic;
+if (verbosity >= Verbosity.Diagnostic) Metrics.ActivateEvents();
 RandomSeed = parseResult.GetValue(optSeed);
 
 var samplesPerPixelInv = 1.0f / samplesPerPixel;
