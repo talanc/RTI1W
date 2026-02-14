@@ -84,7 +84,7 @@ public class LinearBvhHittable : Hittable
         var hasHit = false;
         hit = default;
 
-        Span<int> nodeStack = stackalloc int[128];
+        Span<int> nodeStack = stackalloc int[64];
         nodeStack[0] = 0;
         var nodeStackCount = 1;
 
