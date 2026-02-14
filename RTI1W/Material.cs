@@ -2,7 +2,7 @@
 
 public abstract class Material
 {
-    public abstract ScatterRecord? Scatter(Ray rayIn, HitRecord rec);
+    public abstract ScatterRecord? Scatter(in Ray rayIn, in HitRecord rec);
 }
 
 public struct ScatterRecord
@@ -20,7 +20,7 @@ public class Lambertian : Material
         Albedo = albedo;
     }
 
-    public override ScatterRecord? Scatter(Ray rayIn, HitRecord rec)
+    public override ScatterRecord? Scatter(in Ray rayIn, in HitRecord rec)
     {
         var scatterDirection = rec.Normal + RandomUnitVector();
 
@@ -48,7 +48,7 @@ public class Metal : Material
         Fuzz = fuzz < 1 ? fuzz : 1;
     }
 
-    public override ScatterRecord? Scatter(Ray rayIn, HitRecord rec)
+    public override ScatterRecord? Scatter(in Ray rayIn, in HitRecord rec)
     {
         var reflected = Reflect(UnitVector(rayIn.Direction), rec.Normal);
         return new ScatterRecord()
@@ -68,7 +68,7 @@ public class Dielectric : Material
         Ir = ir;
     }
 
-    public override ScatterRecord? Scatter(Ray rayIn, HitRecord rec)
+    public override ScatterRecord? Scatter(in Ray rayIn, in HitRecord rec)
     {
         var reflectionRatio = rec.FrontFace ? 1 / Ir : Ir;
 

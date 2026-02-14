@@ -139,7 +139,7 @@ public static class Helpers
         return Abs(v.X) < S && Abs(v.Y) < S && Abs(v.Z) < S;
     }
 
-    public static bool IntersectRayBox(Ray ray, Box3 box)
+    public static bool IntersectRayBox(in Ray ray, Box3 box)
     {
         return IntersectRayBox(ray, box, 0, float.PositiveInfinity);
     }
@@ -149,7 +149,7 @@ public static class Helpers
         (b, a) = (a, b);
     }
 
-    public static bool IntersectRayBox(Ray ray, Box3 box, float tMin, float tMax)
+    public static bool IntersectRayBox(in Ray ray, Box3 box, float tMin, float tMax)
     {
         var invDir = ray.InvDirection;
         var t0 = (box.Min - ray.Origin) * invDir;

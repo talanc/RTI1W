@@ -79,7 +79,7 @@ public class LinearBvhHittable : Hittable
         Primitives = primitives;
     }
 
-    public override bool Hit(Ray r, float tMin, float tMax, out HitRecord hit)
+    public override bool Hit(in Ray r, float tMin, float tMax, out HitRecord hit)
     {
         var hasHit = false;
         hit = default;

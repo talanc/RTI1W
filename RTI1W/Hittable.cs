@@ -3,7 +3,7 @@
 public abstract class Hittable
 {
     public Box3 Bounds;
-    public abstract bool Hit(Ray r, float tMin, float tMax, out HitRecord hit);
+    public abstract bool Hit(in Ray r, float tMin, float tMax, out HitRecord hit);
 }
 
 public struct HitRecord
@@ -14,7 +14,7 @@ public struct HitRecord
     public float T;
     public bool FrontFace;
 
-    public void SetFaceNormal(Ray r, Vector3 outwardNormal)
+    public void SetFaceNormal(in Ray r, Vector3 outwardNormal)
     {
         FrontFace = Dot(r.Direction, outwardNormal) < 0;
         Normal = FrontFace ? outwardNormal : -outwardNormal;
@@ -35,7 +35,7 @@ public class BvhHittable : Hittable
         Axis = axis;
     }
 
-    public override bool Hit(Ray r, float tMin, float tMax, out HitRecord hit)
+    public override bool Hit(in Ray r, float tMin, float tMax, out HitRecord hit)
     {
         Metrics.EventRayBvh();
 
@@ -80,7 +80,7 @@ public class HittableList : Hittable
         }
     }
 
-    public override bool Hit(Ray r, float tMin, float tMax, out HitRecord hit)
+    public override bool Hit(in Ray r, float tMin, float tMax, out HitRecord hit)
     {
         hit = default;
 
@@ -122,7 +122,7 @@ public class Triangle : Hittable
         N = Cross(p1 - p0, p2 - p0);
     }
 
-    public override bool Hit(Ray r, float tMin, float tMax, out HitRecord hit)
+    public override bool Hit(in Ray r, float tMin, float tMax, out HitRecord hit)
     {
         Metrics.EventRayTriangle();
 
@@ -186,7 +186,7 @@ public class Sphere : Hittable
         Bounds.Max = Center + half;
     }
 
-    public override bool Hit(Ray r, float tMin, float tMax, out HitRecord hit)
+    public override bool Hit(in Ray r, float tMin, float tMax, out HitRecord hit)
     {
         Metrics.EventRaySphere();
 
