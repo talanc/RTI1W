@@ -139,34 +139,25 @@ public static class Helpers
         return Abs(v.X) < S && Abs(v.Y) < S && Abs(v.Z) < S;
     }
 
-    public static bool IntersectRayBox(in Ray ray, Box3 box)
-    {
-        return IntersectRayBox(ray, box, 0, float.PositiveInfinity);
-    }
-
-    private static void Swap(ref float a, ref float b)
-    {
-        (b, a) = (a, b);
-    }
-
     public static bool IntersectRayBox(in Ray ray, Box3 box, float tMin, float tMax)
     {
         var invDir = ray.InvDirection;
         var t0 = (box.Min - ray.Origin) * invDir;
         var t1 = (box.Max - ray.Origin) * invDir;
+        if (invDir.X < 0) (t0.X, t1.X) = (t1.X, t0.X);
+        if (invDir.Y < 0) (t0.Y, t1.Y) = (t1.Y, t0.Y);
+        if (invDir.Z < 0) (t0.Z, t1.Z) = (t1.Z, t0.Z);
 
-        if (invDir.X < 0) Swap(ref t0.X, ref t1.X);
-        if (invDir.Y < 0) Swap(ref t0.Y, ref t1.Y);
-        if (invDir.Z < 0) Swap(ref t0.Z, ref t1.Z);
+        float tclose = t0.X;
+        if (t0.Y > tclose) tclose = t0.Y;
+        if (t0.Z > tclose) tclose = t0.Z;
+        if (tMin > tclose) tclose = tMin;
 
-        var tclose = Max(Max(t0.X, t0.Y), Max(t0.Z, tMin));
-        var tfar = Min(Min(t1.X, t1.Y), Min(t1.Z, tMax));
+        float tfar = t1.X;
+        if (t1.Y < tfar) tfar = t1.Y;
+        if (t1.Z < tfar) tfar = t1.Z;
+        if (tMax < tfar) tfar = tMax;
 
-        if (tfar <= tclose)
-        {
-            return false;
-        }
-
-        return true;
+        return tfar > tclose;
     }
 }

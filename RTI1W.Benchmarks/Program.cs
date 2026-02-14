@@ -11,12 +11,12 @@ public class Program
 {
     public static void Main(string[] args)
     {
-        //var summary = BenchmarkRunner.Run<IntersectRayBoxBenchmarks>();
-        var summary = BenchmarkRunner.Run<CalcPixelBenchmarks>();
+        BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args);
     }
 }
 
 [SimpleJob]
+[DisassemblyDiagnoser]
 public class IntersectRayBoxBenchmarks
 {
     private readonly Ray ray1 = new(new Vector3(0, 0, 3), new Vector3(1, 1, 0));
@@ -52,51 +52,15 @@ public class IntersectRayBoxBenchmarks
         (b, a) = (a, b);
     }
 
-    public static bool IntersectRayBoxOld(Ray ray, Box3 box, float tMin, float tMax)
-    {
-        // TODO i think this can use SIMD
-
-        var invDir = ray.InvDirection;
-        var t0 = (box.Min - ray.Origin) * invDir;
-        var t1 = (box.Max - ray.Origin) * invDir;
-
-        if (invDir.X < 0) Swap(ref t0.X, ref t1.X);
-        if (invDir.Y < 0) Swap(ref t0.Y, ref t1.Y);
-        if (invDir.Z < 0) Swap(ref t0.Z, ref t1.Z);
-
-        tMin = Max(tMin, t0.X);
-        tMax = Min(tMax, t1.X);
-        if (tMax <= tMin)
-        {
-            return false;
-        }
-
-        tMin = Max(tMin, t0.Y);
-        tMax = Min(tMax, t1.Y);
-        if (tMax <= tMin)
-        {
-            return false;
-        }
-
-        tMin = Max(tMin, t0.Z);
-        tMax = Min(tMax, t1.Z);
-        if (tMax <= tMin)
-        {
-            return false;
-        }
-
-        return true;
-    }
-
-    public static bool IntersectRayBoxNew(Ray ray, Box3 box, float tMin, float tMax)
+    public static bool IntersectRayBoxOld(in Ray ray, Box3 box, float tMin, float tMax)
     {
         var invDir = ray.InvDirection;
         var t0 = (box.Min - ray.Origin) * invDir;
         var t1 = (box.Max - ray.Origin) * invDir;
 
-        if (invDir.X < 0) Swap(ref t0.X, ref t1.X);
-        if (invDir.Y < 0) Swap(ref t0.Y, ref t1.Y);
-        if (invDir.Z < 0) Swap(ref t0.Z, ref t1.Z);
+        if (invDir.X < 0) (t0.X, t1.X) = (t1.X, t0.X);
+        if (invDir.Y < 0) (t0.Y, t1.Y) = (t1.Y, t0.Y);
+        if (invDir.Z < 0) (t0.Z, t1.Z) = (t1.Z, t0.Z);
 
         var tclose = Max(Max(t0.X, t0.Y), Max(t0.Z, tMin));
         var tfar = Min(Min(t1.X, t1.Y), Min(t1.Z, tMax));
@@ -107,6 +71,28 @@ public class IntersectRayBoxBenchmarks
         }
 
         return true;
+    }
+
+    public static bool IntersectRayBoxNew(in Ray ray, Box3 box, float tMin, float tMax)
+    {
+        var invDir = ray.InvDirection;
+        var t0 = (box.Min - ray.Origin) * invDir;
+        var t1 = (box.Max - ray.Origin) * invDir;
+        if (invDir.X < 0) (t0.X, t1.X) = (t1.X, t0.X);
+        if (invDir.Y < 0) (t0.Y, t1.Y) = (t1.Y, t0.Y);
+        if (invDir.Z < 0) (t0.Z, t1.Z) = (t1.Z, t0.Z);
+
+        float tclose = t0.X;
+        if (t0.Y > tclose) tclose = t0.Y;
+        if (t0.Z > tclose) tclose = t0.Z;
+        if (tMin > tclose) tclose = tMin;
+
+        float tfar = t1.X;
+        if (t1.Y < tfar) tfar = t1.Y;
+        if (t1.Z < tfar) tfar = t1.Z;
+        if (tMax < tfar) tfar = tMax;
+
+        return tfar > tclose;
     }
 }
 

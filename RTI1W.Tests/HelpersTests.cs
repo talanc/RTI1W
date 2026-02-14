@@ -25,7 +25,7 @@ public class HelpersTests
         var box = new Box3(V3(3, 3, 3), V3(5, 5, 5));
 
         // Act
-        var intersects = IntersectRayBox(ray, box);
+        var intersects = IntersectRayBox(ray, box, 0, float.PositiveInfinity);
 
         // Assert
         Assert.AreEqual(expectedIntersects, intersects);
