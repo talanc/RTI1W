@@ -3,6 +3,19 @@
 public abstract class Hittable
 {
     public Box3 Bounds;
+
+    /// <summary>
+    /// Tests if the ray intersects this hittable object.
+    /// If the ray intersects, then it returns true and <paramref name="hit"/> is updated.
+    /// If the ray doesn't intersect, then it returns false and <paramref name="hit"/> is left uninitialized.
+    /// </summary>
+    /// <remarks>
+    /// Note to implementors: You must include this in your child classes:
+    /// <code>
+    /// Unsafe.SkipInit(out hit);
+    /// </code>
+    /// This skips the initialization of the out parameter, which is important for performance.
+    /// </remarks>
     public abstract bool Hit(in Ray r, float tMin, float tMax, out HitRecord hit);
 }
 
@@ -37,12 +50,13 @@ public class BvhHittable : Hittable
 
     public override bool Hit(in Ray r, float tMin, float tMax, out HitRecord hit)
     {
+        Unsafe.SkipInit(out hit);
+
         Metrics.EventRayBvh();
 
         // Ignore if no intersection
         if (!IntersectRayBox(r, Bounds, tMin, tMax))
         {
-            hit = default;
             return false;
         }
 
@@ -50,10 +64,7 @@ public class BvhHittable : Hittable
 
         if (a.Hit(r, tMin, tMax, out hit))
         {
-            if (b.Hit(r, tMin, hit.T, out var hit2))
-            {
-                hit = hit2;
-            }
+            b.Hit(r, tMin, hit.T, out hit);
             return true;
         }
         else if (b.Hit(r, tMin, tMax, out hit))
@@ -82,7 +93,7 @@ public class HittableList : Hittable
 
     public override bool Hit(in Ray r, float tMin, float tMax, out HitRecord hit)
     {
-        hit = default;
+        Unsafe.SkipInit(out hit);
 
         var hasHit = false;
         var closestSoFar = tMax;
@@ -124,9 +135,9 @@ public class Triangle : Hittable
 
     public override bool Hit(in Ray r, float tMin, float tMax, out HitRecord hit)
     {
-        Metrics.EventRayTriangle();
+        Unsafe.SkipInit(out hit);
 
-        hit = default;
+        Metrics.EventRayTriangle();
 
         var d = -Dot(N, P0);
 
@@ -188,9 +199,9 @@ public class Sphere : Hittable
 
     public override bool Hit(in Ray r, float tMin, float tMax, out HitRecord hit)
     {
-        Metrics.EventRaySphere();
+        Unsafe.SkipInit(out hit);
 
-        hit = default;
+        Metrics.EventRaySphere();
 
         var oc = r.Origin - Center;
         var a = r.Direction.LengthSquared();

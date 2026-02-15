@@ -81,8 +81,9 @@ public class LinearBvhHittable : Hittable
 
     public override bool Hit(in Ray r, float tMin, float tMax, out HitRecord hit)
     {
+        Unsafe.SkipInit(out hit);
+
         var hasHit = false;
-        hit = default;
 
         Span<int> nodeStack = stackalloc int[64];
         nodeStack[0] = 0;
@@ -114,11 +115,10 @@ public class LinearBvhHittable : Hittable
                 {
                     for (var i = 0; i < node.NumPrims; i++)
                     {
-                        if (Primitives[node.PrimOffsetOrRightOffset + i].Hit(r, tMin, tMax, out var hit2))
+                        if (Primitives[node.PrimOffsetOrRightOffset + i].Hit(r, tMin, tMax, out hit))
                         {
-                            hit = hit2;
-                            tMax = hit2.T;
                             hasHit = true;
+                            tMax = hit.T;
                         }
                     }
                 }
