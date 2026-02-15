@@ -277,13 +277,8 @@ Vector3 RayColor(Ray r, int depth)
 
     if (world.Hit(r, 0.001f, float.PositiveInfinity, out var hit))
     {
-        var matRecMaybe = hit.Material.Scatter(r, hit);
-        if (matRecMaybe.HasValue)
-        {
-            var matRec = matRecMaybe.Value;
-            return matRec.Attenuation * RayColor(matRec.Scattered, depth - 1);
-        }
-        return ColorBlack;
+        var matRec = hit.Material.Scatter(r, hit);
+        return matRec.Attenuation * RayColor(matRec.Scattered, depth - 1);
     }
 
     var unitDir = UnitVector(r.Direction);
