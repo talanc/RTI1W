@@ -50,7 +50,7 @@ public class BvhHittable : Hittable
 
         if (a.Hit(r, tMin, tMax, out hit))
         {
-            if (b.Hit(r, tMin, hit.T, out var hit2) && hit2.T < hit.T)
+            if (b.Hit(r, tMin, hit.T, out var hit2))
             {
                 hit = hit2;
             }
