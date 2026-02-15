@@ -82,11 +82,11 @@ public class BvhHittable : Hittable
 
 public class HittableList : Hittable
 {
-    public List<Hittable> List;
+    public Hittable[] Items;
 
     public HittableList(List<Hittable> list)
     {
-        List = list;
+        Items = list.ToArray();
 
         Bounds = list[0].Bounds;
         for (int i = 1; i < list.Count; i++)
@@ -102,13 +102,12 @@ public class HittableList : Hittable
         var hasHit = false;
         var closestSoFar = tMax;
 
-        foreach (var obj in List)
+        foreach (var obj in Items)
         {
-            if (obj.Hit(r, tMin, closestSoFar, out var objHit))
+            if (obj.Hit(r, tMin, closestSoFar, out hit))
             {
                 hasHit = true;
-                hit = objHit;
-                closestSoFar = objHit.T;
+                closestSoFar = hit.T;
             }
         }
 

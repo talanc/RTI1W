@@ -44,8 +44,8 @@ public static class LinearBvhHelper
         {
             node.Bounds = hittableList.Bounds;
             node.PrimOffsetOrRightOffset = primitives.Count;
-            node.NumPrims = (ushort)hittableList.List.Count;
-            primitives.AddRange(hittableList.List);
+            node.NumPrims = (ushort)hittableList.Items.Length;
+            primitives.AddRange(hittableList.Items);
         }
         else if (hittable is BvhHittable bvhHittable)
         {
