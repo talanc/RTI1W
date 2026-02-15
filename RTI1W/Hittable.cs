@@ -27,10 +27,14 @@ public struct HitRecord
     public float T;
     public bool FrontFace;
 
-    public void SetFaceNormal(in Ray r, Vector3 outwardNormal)
+    public HitRecord(Vector3 p, Vector3 normal, Material material, float t, in Ray ray)
     {
-        FrontFace = Dot(r.Direction, outwardNormal) < 0;
-        Normal = FrontFace ? outwardNormal : -outwardNormal;
+        P = p;
+        Material = material;
+        T = t;
+
+        FrontFace = Dot(ray.Direction, normal) < 0;
+        Normal = FrontFace ? normal : -normal;
     }
 }
 
@@ -169,13 +173,7 @@ public class Triangle : Hittable
             return false;
         }
 
-        hit = new HitRecord()
-        {
-            P = p,
-            T = t,
-            Material = Material,
-        };
-        hit.SetFaceNormal(r, N);
+        hit = new HitRecord(p, N, Material, t, r);
         return true;
     }
 }
@@ -230,13 +228,7 @@ public class Sphere : Hittable
         var p = r.At(t);
         var outwardNormal = (p - Center) / Radius;
 
-        hit = new HitRecord()
-        {
-            P = p,
-            T = t,
-            Material = Material,
-        };
-        hit.SetFaceNormal(r, outwardNormal);
+        hit = new HitRecord(p, outwardNormal, Material, t, r);
         return true;
     }
 }
