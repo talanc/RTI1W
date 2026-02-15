@@ -47,11 +47,6 @@ public class IntersectRayBoxBenchmarks
     [Benchmark]
     public bool New() => IntersectRayBoxNew(ray, box, fMin, fMax);
 
-    private static void Swap(ref float a, ref float b)
-    {
-        (b, a) = (a, b);
-    }
-
     public static bool IntersectRayBoxOld(in Ray ray, Box3 box, float tMin, float tMax)
     {
         var invDir = ray.InvDirection;
