@@ -11,7 +11,7 @@ public class Camera
     public Vector3 W;
     public float LensRadius;
 
-    public Camera(Vector3 lookFrom, Vector3 lookAt, Vector3 vUp, float vFov, float aspectRatio, float aperture, float focusDist)
+    public void SetPosition(Vector3 lookFrom, Vector3 lookAt, Vector3 vUp, float vFov, float aspectRatio, float aperture, float focusDist)
     {
         var theta = DegreesToRadians(vFov);
         var h = Tan(theta / 2);

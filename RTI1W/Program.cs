@@ -78,7 +78,7 @@ if (parseResult.Errors.Count > 0 ||
 var outputPath = parseResult.GetRequiredValue(optOutput);
 var samplesPerPixel = parseResult.GetValue(optSamples);
 var maxDepth = parseResult.GetValue(optMaxDepth);
-var numThreads = parseResult.GetValue(optThreads);
+var numThreads = Math.Max(1, parseResult.GetValue(optThreads));
 var bvh = parseResult.GetValue(optBvh);
 var openOutput = parseResult.GetValue(optOpen);
 var interactive = parseResult.GetValue(optInteractive);
@@ -125,7 +125,18 @@ var lookAt = P3(0, 0, 0);
 var vUp = P3(0, 1, 0);
 var distToFocus = 10.0f;
 var aperture = 0.1f;
-var camera = new Camera(lookFrom, lookAt, vUp, 20, aspectRatio, aperture, distToFocus);
+var camera = new Camera();
+camera.SetPosition(lookFrom, lookAt, vUp, 20, aspectRatio, aperture, distToFocus);
+
+//
+// Image
+//
+
+var image = new int[imageWidth * imageHeight];
+
+//
+// Interactive
+//
 
 if (interactive)
 {
@@ -136,8 +147,6 @@ if (interactive)
 //
 // Render
 //
-
-var image = new int[imageWidth * imageHeight];
 
 int[] scanlinesCompleted = [];
 if (verbosity >= Verbosity.Normal)
@@ -232,10 +241,10 @@ void Scanline(int threadId, int j)
             var u = (pixX + RandomValue()) / (imageWidth - 1);
             var v = (pixY + RandomValue()) / (imageHeight - 1);
             var r = camera.GetRay(u, v);
-            pixelColor += RayColor(r, maxDepth);
+            pixelColor += RayTracer.RayColor(world, r, maxDepth);
         }
 
-        SetPixel(image, dataX, dataY, pixelColor);
+        RayTracer.SetPixel(imageWidth, image, dataX, dataY, pixelColor, samplesPerPixelInv);
     }
 };
 
@@ -291,7 +300,6 @@ return 0;
 
 void RunInteractive()
 {
-    var interactiveImage = new int[imageWidth * imageHeight];
     var texturePixels = new Color[imageWidth * imageHeight];
 
     var cameraPos = lookFrom;
@@ -299,26 +307,20 @@ void RunInteractive()
     var yaw = Atan2(forward.Z, forward.X);
     var pitch = Asin(forward.Y);
 
-    var interactiveCamera = camera;
-
-    var workerCount = Math.Max(1, numThreads);
-    var renderSignal = new ManualResetEventSlim(false);
-
     const int targetTileCount = 64;
     var tilesX = Math.Max(1, (int)Ceiling(Sqrt(targetTileCount * ((float)imageWidth / imageHeight))));
     var tilesY = Math.Max(1, (int)Ceiling((float)targetTileCount / tilesX));
     var tileWidth = Math.Max(1, (imageWidth + tilesX - 1) / tilesX);
     var tileHeight = Math.Max(1, (imageHeight + tilesY - 1) / tilesY);
-    var totalTiles = tilesX * tilesY;
-    var tiles = Enumerable.Range(0, totalTiles).ToArray();
+    var tileCount = tilesX * tilesY;
+    var tiles = Enumerable.Range(0, tileCount).ToArray();
 
-    var renderGeneration = 0;
-    var completedTiles = 0;
-    var nextTile = 0;
-    var stopWorkers = 0;
+    var workerStartSignal = new ManualResetEventSlim(false);
+    var workerStop = false;
+    var workerGeneration = 0;
+    var workerCompletedTiles = 0;
+    var workerNextTile = 0;
     
-    var workerTasks = new Task[workerCount];
-
     void UpdateDirectionAndCamera()
     {
         var dir = UnitVector(V3(
@@ -327,111 +329,91 @@ void RunInteractive()
             z: Cos(pitch) * Sin(yaw)
         ));
 
-        interactiveCamera = new Camera(cameraPos, cameraPos + dir, vUp, 20, aspectRatio, aperture, distToFocus);
+        camera.SetPosition(cameraPos, cameraPos + dir, vUp, 20, aspectRatio, aperture, distToFocus);
     }
 
-    void WorkerLoop(int threadIndex)
+    void Worker()
     {
-        while (true)
+    start:
+        if (Volatile.Read(ref workerStop)) return;
+        workerStartSignal.Wait();
+        if (Volatile.Read(ref workerStop)) return;
+
+        var generation = Volatile.Read(ref workerGeneration);
+
+    tile:
+        if (generation != Volatile.Read(ref workerGeneration))
         {
-        start:
-            if (Volatile.Read(ref stopWorkers) != 0)
+            goto start;
+        }
+
+        var tileIndex = Interlocked.Increment(ref workerNextTile) - 1;
+        if (tileIndex >= tileCount)
+        {
+            if (generation == Volatile.Read(ref workerGeneration))
             {
-                break;
+                workerStartSignal.Reset();
+            }
+            goto start;
+        }
+
+        var (tileY, tileX) = Math.DivRem(tiles[tileIndex], tilesX);
+
+        var widthStart = tileX * tileWidth;
+        var widthEnd = Math.Min(imageWidth, widthStart + tileWidth);
+        var widthStep = 1;
+
+        var heightStart = tileY * tileHeight;
+        var heightEnd = Math.Min(imageHeight, heightStart + tileHeight);
+        var heightStep = 1;
+
+        for (var j = heightStart; j < heightEnd; j += heightStep)
+        {
+            if (generation != Volatile.Read(ref workerGeneration))
+            {
+                goto start;
             }
 
-            renderSignal.Wait();
+            var pixY = imageHeight - 1 - j;
+            var dataY = j;
 
-            if (Volatile.Read(ref stopWorkers) != 0)
+            for (var i = widthStart; i < widthEnd; i += widthStep)
             {
-                break;
-            }
+                var pixX = i;
+                var dataX = i;
 
-            var generation = Volatile.Read(ref renderGeneration);
-
-            while (true)
-            {
-                if (generation != Volatile.Read(ref renderGeneration))
+                var pixelColor = C3(0, 0, 0);
+                for (var s = 0; s < samplesPerPixel; s++)
                 {
-                    goto start;
+                    var u = (pixX + RandomValue()) / (imageWidth - 1);
+                    var v = (pixY + RandomValue()) / (imageHeight - 1);
+                    var r = camera.GetRay(u, v);
+                    pixelColor += RayTracer.RayColor(world, r, maxDepth);
                 }
 
-                var tileIndex = Interlocked.Increment(ref nextTile) - 1;
-                if (tileIndex >= totalTiles)
-                {
-                    if (generation == Volatile.Read(ref renderGeneration))
-                    {
-                        renderSignal.Reset();
-                    }
-                    break;
-                }
-
-                var tileX = tiles[tileIndex] % tilesX;
-                var tileY = tiles[tileIndex] / tilesX;
-
-                var widthStart = tileX * tileWidth;
-                var widthEnd = Math.Min(imageWidth, widthStart + tileWidth);
-                var widthStep = 1;
-
-                var heightStart = tileY * tileHeight;
-                var heightEnd = Math.Min(imageHeight, heightStart + tileHeight);
-                var heightStep = 1;
-
-                var localCamera = interactiveCamera;
-
-                for (var j = heightStart; j < heightEnd; j += heightStep)
-                {
-                    if (generation != Volatile.Read(ref renderGeneration))
-                    {
-                        goto start;
-                    }
-
-                    var pixY = imageHeight - 1 - j;
-                    var dataY = j;
-
-                    for (var i = widthStart; i < widthEnd; i += widthStep)
-                    {
-                        if (generation != Volatile.Read(ref renderGeneration))
-                        {
-                            goto start;
-                        }
-
-                        var pixX = i;
-                        var dataX = i;
-
-                        var pixelColor = C3(0, 0, 0);
-                        for (var s = 0; s < samplesPerPixel; s++)
-                        {
-                            var u = (pixX + RandomValue()) / (imageWidth - 1);
-                            var v = (pixY + RandomValue()) / (imageHeight - 1);
-                            var r = localCamera.GetRay(u, v);
-                            pixelColor += RayColor(r, maxDepth);
-                        }
-
-                        SetPixel(interactiveImage, dataX, dataY, pixelColor);
-                    }
-                }
-
-                Interlocked.Increment(ref completedTiles);
+                RayTracer.SetPixel(imageWidth, image, dataX, dataY, pixelColor, samplesPerPixelInv);
             }
         }
+
+        Interlocked.Increment(ref workerCompletedTiles);
+        goto tile;
     }
 
     void StartRender()
     {
-        Array.Clear(interactiveImage);
         Random.Shared.Shuffle(tiles);
-        Interlocked.Exchange(ref completedTiles, 0);
-        Interlocked.Exchange(ref nextTile, 0);
-        Interlocked.Increment(ref renderGeneration);
-        renderSignal.Set();
+        Interlocked.Exchange(ref workerCompletedTiles, 0);
+        Interlocked.Exchange(ref workerNextTile, 0);
+        if (workerGeneration > 1_000_000) Volatile.Write(ref workerGeneration, 0);
+        else Interlocked.Increment(ref workerGeneration);
+        workerStartSignal.Set();
     }
 
     void UpdateTexturePixels(Texture2D texture)
     {
-        for (var i = 0; i < interactiveImage.Length; i++)
+        for (var i = 0; i < image.Length; i++)
         {
-            var d = interactiveImage[i];
+            var d = image[i];
             var r = (byte)((d >> 16) & 0xFF);
             var g = (byte)((d >> 8) & 0xFF);
             var b = (byte)(d & 0xFF);
@@ -443,13 +425,13 @@ void RunInteractive()
 
     UpdateDirectionAndCamera();
 
-    for (var i = 0; i < workerCount; i++)
+    var workerTasks = new Task[numThreads];
+    for (var i = 0; i < workerTasks.Length; i++)
     {
-        var localIdx = i;
-        workerTasks[localIdx] = Task.Run(() => WorkerLoop(localIdx));
+        workerTasks[i] = Task.Run(() => Worker());
     }
 
-    var windowSizeWidth = 750;
+    var windowSizeWidth = 900;
     var windowSizeHeight = (int)Round(windowSizeWidth / aspectRatio);
     var windowSizeIncrements = 150;
 
@@ -469,14 +451,14 @@ void RunInteractive()
 
     while (!Raylib.WindowShouldClose())
     {
+        var rerender = false;
+
         if (Raylib.IsWindowResized())
         {
-            UpdateDirectionAndCamera();
-            StartRender();
+            rerender = true;
         }
 
         var moveSpeed = 0.2f;
-        var moved = false;
 
         var dir = UnitVector(new Vector3(
             Cos(pitch) * Cos(yaw),
@@ -484,16 +466,16 @@ void RunInteractive()
             Cos(pitch) * Sin(yaw)));
         var right = UnitVector(Cross(dir, vUp));
 
-        if (Raylib.IsKeyDown(KeyboardKey.W)) { cameraPos += dir * moveSpeed; moved = true; }
-        if (Raylib.IsKeyDown(KeyboardKey.S)) { cameraPos -= dir * moveSpeed; moved = true; }
-        if (Raylib.IsKeyDown(KeyboardKey.A)) { cameraPos -= right * moveSpeed; moved = true; }
-        if (Raylib.IsKeyDown(KeyboardKey.D)) { cameraPos += right * moveSpeed; moved = true; }
-        if (Raylib.IsKeyDown(KeyboardKey.E)) { cameraPos += vUp * moveSpeed; moved = true; }
-        if (Raylib.IsKeyDown(KeyboardKey.Q)) { cameraPos -= vUp * moveSpeed; moved = true; }
+        if (Raylib.IsKeyDown(KeyboardKey.W)) { cameraPos += dir * moveSpeed; rerender = true; }
+        if (Raylib.IsKeyDown(KeyboardKey.S)) { cameraPos -= dir * moveSpeed; rerender = true; }
+        if (Raylib.IsKeyDown(KeyboardKey.A)) { cameraPos -= right * moveSpeed; rerender = true; }
+        if (Raylib.IsKeyDown(KeyboardKey.D)) { cameraPos += right * moveSpeed; rerender = true; }
+        if (Raylib.IsKeyDown(KeyboardKey.E)) { cameraPos += vUp * moveSpeed; rerender = true; }
+        if (Raylib.IsKeyDown(KeyboardKey.Q)) { cameraPos -= vUp * moveSpeed; rerender = true; }
 
-        var newWindowSizeWidth = windowSizeWidth;
+        var oldWindowSizeWidth = windowSizeWidth;
 
-        if (Raylib.IsKeyPressed(KeyboardKey.Minus))
+        if (Raylib.IsKeyPressed(KeyboardKey.Minus) || Raylib.IsKeyPressed(KeyboardKey.KpSubtract))
         {
             if (windowSizeWidth >= windowSizeIncrements * 2)
             {
@@ -501,14 +483,21 @@ void RunInteractive()
             }
         }
 
-        if (Raylib.IsKeyPressed(KeyboardKey.Equal))
+        if (Raylib.IsKeyPressed(KeyboardKey.Equal) || Raylib.IsKeyPressed(KeyboardKey.KpAdd))
         {
             windowSizeWidth += windowSizeIncrements;
         }
 
-        if (windowSizeWidth != newWindowSizeWidth)
+        if (windowSizeWidth != oldWindowSizeWidth)
         {
+            var oldWindowSizeHeight = windowSizeHeight;
+
             windowSizeHeight = (int)Round(windowSizeWidth / aspectRatio);
+
+            var windowPos = Raylib.GetWindowPosition();
+            var newX = (int)windowPos.X + (oldWindowSizeWidth - windowSizeWidth) / 2;
+            var newY = (int)windowPos.Y + (oldWindowSizeHeight - windowSizeHeight) / 2;
+            Raylib.SetWindowPosition(newX, newY);
             Raylib.SetWindowSize(windowSizeWidth, windowSizeHeight);
         }
 
@@ -521,21 +510,20 @@ void RunInteractive()
             {
                 yaw += mouseDelta.X * mouseSensitivity;
                 pitch -= mouseDelta.Y * mouseSensitivity;
-                moved = true;
+                pitch = Math.Clamp(pitch, -1.4f, 1.4f);
+                rerender = true;
             }
         }
 
-        pitch = Math.Clamp(pitch, -1.4f, 1.4f);
-
-        if (moved)
+        if (rerender)
         {
             UpdateDirectionAndCamera();
             StartRender();
         }
 
-        var currentGeneration = Volatile.Read(ref renderGeneration);
-        var currentTiles = Volatile.Read(ref completedTiles);
-        var frameDone = currentTiles >= totalTiles;
+        var currentGeneration = Volatile.Read(ref workerGeneration);
+        var currentTiles = Volatile.Read(ref workerCompletedTiles);
+        var frameDone = currentTiles >= tileCount;
         var shouldUpload = currentGeneration != uploadedGeneration || currentTiles != uploadedTiles;
 
         if (shouldUpload && (frameDone || uploadTimer.ElapsedMilliseconds >= 100))
@@ -555,54 +543,18 @@ void RunInteractive()
             Vector2.Zero,
             0,
             Color.White);
-        Raylib.DrawText("WASD move, Q/E up-down, mouse left-click look", 10, 10, 18, Color.RayWhite);
+        Raylib.DrawText("WASD move, Q/E up-down, mouse left-click look", 10, 10, 18, Color.Black);
         Raylib.EndDrawing();
     }
 
-    Volatile.Write(ref renderGeneration, -1);
-    Interlocked.Exchange(ref stopWorkers, 1);
-    renderSignal.Set();
+    Volatile.Write(ref workerGeneration, -1);
+    Volatile.Write(ref workerStop, true);
+    workerStartSignal.Set();
     Task.WaitAll(workerTasks);
+    workerStartSignal.Dispose();
 
-    renderSignal.Dispose();
     Raylib.UnloadTexture(frameTexture);
     Raylib.CloseWindow();
-}
-
-Vector3 RayColor(RTI1W.Ray r, int depth)
-{
-    if (depth <= 0)
-    {
-        return ColorBlack;
-    }
-
-    if (world.Hit(r, 0.001f, float.PositiveInfinity, out var hit))
-    {
-        var matRec = hit.Material.Scatter(r, hit);
-        return matRec.Attenuation * RayColor(matRec.Scattered, depth - 1);
-    }
-
-    var unitDir = UnitVector(r.Direction);
-    var t = 0.5f * (unitDir.Y + 1);
-    return (1 - t) * ColorWhite + t * C3(0.5f, 0.7f, 1.0f);
-}
-
-void SetPixel(int[] image, int x, int y, Vector3 pixelColor)
-{
-    var c = Vector3.SquareRoot(pixelColor * samplesPerPixelInv);
-
-    var rgb_f32 = 256 * Vector3.ClampNative(c, Vector3.Zero, new Vector3(0.999f));
-    var rgb_i32 = Vector128.ConvertToInt32Native(rgb_f32.AsVector128Unsafe());
-
-    var r = rgb_i32.GetElement(0);
-    var g = rgb_i32.GetElement(1);
-    var b = rgb_i32.GetElement(2);
-
-    var d = (r << 16) | (g << 8) | b;
-
-    var i = x + (y * imageWidth);
-
-    image[i] = d;
 }
 
 Hittable RandomScene()
