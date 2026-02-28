@@ -8,6 +8,7 @@ using System.CommandLine;
 using System.CommandLine.Parsing;
 using System.Diagnostics;
 using System.Runtime.Intrinsics;
+using Raylib_cs;
 
 //
 // Cmdline
@@ -45,6 +46,7 @@ var optThreads = addOption("--threads", "Number of parallel threads", 4);
 var optBvh = addOption("--bvh", "Bounding volume hierarchy structure", BvhMode.Tree);
 var optSeed = addOption("--seed", "Random seed (advanced use for testing)", 0);
 var optOpen = addOption("--open", "Open output image at end", false);
+var optInteractive = addOption("--interactive", "Render in a Raylib window with controls", false);
 var optVerbosity = addOption("--verbosity", "Verbosity output mode", Verbosity.Normal);
 var optQuiet = addOption("-q", "Quiet output (--verbosity Quiet)", false);
 var optVerbose = addOption("-v", "Verbose output (--verbosity Verbose)", false);
@@ -79,6 +81,7 @@ var maxDepth = parseResult.GetValue(optMaxDepth);
 var numThreads = parseResult.GetValue(optThreads);
 var bvh = parseResult.GetValue(optBvh);
 var openOutput = parseResult.GetValue(optOpen);
+var interactive = parseResult.GetValue(optInteractive);
 
 var imageWidth = parseResult.GetValue(optWidth);
 var imageHeight = parseResult.GetValue(optHeight);
@@ -123,6 +126,12 @@ var vUp = P3(0, 1, 0);
 var distToFocus = 10.0f;
 var aperture = 0.1f;
 var camera = new Camera(lookFrom, lookAt, vUp, 20, aspectRatio, aperture, distToFocus);
+
+if (interactive)
+{
+    RunInteractive();
+    return 0;
+}
 
 //
 // Render
@@ -280,7 +289,170 @@ if (openOutput)
 
 return 0;
 
-Vector3 RayColor(Ray r, int depth)
+void RunInteractive()
+{
+    var interactiveImage = new int[imageWidth * imageHeight];
+    var texturePixels = new Color[imageWidth * imageHeight];
+
+    var cameraPos = lookFrom;
+    var forward = UnitVector(lookAt - lookFrom);
+    var yaw = Atan2(forward.Z, forward.X);
+    var pitch = Asin(forward.Y);
+
+    var interactiveCamera = camera;
+    var rerender = true;
+
+    void UpdateDirectionAndCamera()
+    {
+        var dir = UnitVector(new Vector3(
+            Cos(pitch) * Cos(yaw),
+            Sin(pitch),
+            Cos(pitch) * Sin(yaw)));
+
+        interactiveCamera = new Camera(cameraPos, cameraPos + dir, vUp, 20, aspectRatio, aperture, distToFocus);
+    }
+
+    void RenderInteractiveFrame()
+    {
+        var tasks = new Task[numThreads];
+        for (var i = 0; i < numThreads; i++)
+        {
+            var localIdx = i;
+            tasks[localIdx] = Task.Run(() =>
+            {
+                for (var j = localIdx; j < imageHeight; j += numThreads)
+                {
+                    var pixY = imageHeight - 1 - j;
+                    var dataY = j;
+
+                    for (var i = 0; i < imageWidth; i++)
+                    {
+                        var pixX = i;
+                        var dataX = i;
+
+                        var pixelColor = C3(0, 0, 0);
+                        for (var s = 0; s < samplesPerPixel; s++)
+                        {
+                            var u = (pixX + RandomValue()) / (imageWidth - 1);
+                            var v = (pixY + RandomValue()) / (imageHeight - 1);
+                            var r = interactiveCamera.GetRay(u, v);
+                            pixelColor += RayColor(r, maxDepth);
+                        }
+
+                        SetPixel(interactiveImage, dataX, dataY, pixelColor);
+                    }
+                }
+            });
+        }
+        Task.WaitAll(tasks);
+    }
+
+    void UpdateTexturePixels(Texture2D texture)
+    {
+        for (var i = 0; i < interactiveImage.Length; i++)
+        {
+            var d = interactiveImage[i];
+            var r = (byte)((d >> 16) & 0xFF);
+            var g = (byte)((d >> 8) & 0xFF);
+            var b = (byte)(d & 0xFF);
+            texturePixels[i] = new Color(r, g, b, (byte)255);
+        }
+
+        Raylib.UpdateTexture(texture, texturePixels);
+    }
+
+    UpdateDirectionAndCamera();
+
+    Raylib.SetConfigFlags(ConfigFlags.ResizableWindow);
+    Raylib.InitWindow(750, 500, "RTI1W - Interactive");
+    Raylib.SetTargetFPS(60);
+
+    var blankImage = Raylib.GenImageColor(imageWidth, imageHeight, Color.Black);
+    var frameTexture = Raylib.LoadTextureFromImage(blankImage);
+    Raylib.UnloadImage(blankImage);
+
+    while (!Raylib.WindowShouldClose())
+    {
+        if (Raylib.IsWindowResized())
+        {
+            //imageWidth = Math.Max(1, Raylib.GetScreenWidth());
+            //imageHeight = Math.Max(1, Raylib.GetScreenHeight());
+            //aspectRatio = (float)imageWidth / imageHeight;
+
+            //interactiveImage = new int[imageWidth * imageHeight];
+            //texturePixels = new Color[imageWidth * imageHeight];
+
+            //Raylib.UnloadTexture(frameTexture);
+            //var resizedBlank = Raylib.GenImageColor(imageWidth, imageHeight, Color.Black);
+            //frameTexture = Raylib.LoadTextureFromImage(resizedBlank);
+            //Raylib.UnloadImage(resizedBlank);
+
+            UpdateDirectionAndCamera();
+            rerender = true;
+        }
+
+        var moveSpeed = 0.2f;
+        var moved = false;
+
+        var dir = UnitVector(new Vector3(
+            Cos(pitch) * Cos(yaw),
+            Sin(pitch),
+            Cos(pitch) * Sin(yaw)));
+        var right = UnitVector(Cross(dir, vUp));
+
+        if (Raylib.IsKeyDown(KeyboardKey.W)) { cameraPos += dir * moveSpeed; moved = true; }
+        if (Raylib.IsKeyDown(KeyboardKey.S)) { cameraPos -= dir * moveSpeed; moved = true; }
+        if (Raylib.IsKeyDown(KeyboardKey.A)) { cameraPos -= right * moveSpeed; moved = true; }
+        if (Raylib.IsKeyDown(KeyboardKey.D)) { cameraPos += right * moveSpeed; moved = true; }
+        if (Raylib.IsKeyDown(KeyboardKey.E)) { cameraPos += vUp * moveSpeed; moved = true; }
+        if (Raylib.IsKeyDown(KeyboardKey.Q)) { cameraPos -= vUp * moveSpeed; moved = true; }
+
+        if (Raylib.IsMouseButtonDown(MouseButton.Left))
+        {
+            var mouseDelta = Raylib.GetMouseDelta();
+            const float mouseSensitivity = 0.004f;
+
+            if (mouseDelta.X != 0 || mouseDelta.Y != 0)
+            {
+                yaw += mouseDelta.X * mouseSensitivity;
+                pitch -= mouseDelta.Y * mouseSensitivity;
+                moved = true;
+            }
+        }
+
+        pitch = Math.Clamp(pitch, -1.4f, 1.4f);
+
+        if (moved)
+        {
+            UpdateDirectionAndCamera();
+            rerender = true;
+        }
+
+        if (rerender)
+        {
+            RenderInteractiveFrame();
+            UpdateTexturePixels(frameTexture);
+            rerender = false;
+        }
+
+        Raylib.BeginDrawing();
+        Raylib.ClearBackground(Color.Black);
+        Raylib.DrawTexturePro(
+            frameTexture,
+            new Rectangle(0, 0, frameTexture.Width, frameTexture.Height),
+            new Rectangle(0, 0, Raylib.GetScreenWidth(), Raylib.GetScreenHeight()),
+            Vector2.Zero,
+            0,
+            Color.White);
+        Raylib.DrawText("WASD move, Q/E up-down, mouse left-click look", 10, 10, 18, Color.RayWhite);
+        Raylib.EndDrawing();
+    }
+
+    Raylib.UnloadTexture(frameTexture);
+    Raylib.CloseWindow();
+}
+
+Vector3 RayColor(RTI1W.Ray r, int depth)
 {
     if (depth <= 0)
     {
