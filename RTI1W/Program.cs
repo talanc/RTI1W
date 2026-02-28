@@ -74,13 +74,25 @@ if (parseResult.Errors.Count > 0 ||
 }
 
 var outputPath = parseResult.GetRequiredValue(optOutput);
-var imageWidth = parseResult.GetValue(optWidth);
-var imageHeight = parseResult.GetValue(optHeight);
 var samplesPerPixel = parseResult.GetValue(optSamples);
 var maxDepth = parseResult.GetValue(optMaxDepth);
 var numThreads = parseResult.GetValue(optThreads);
 var bvh = parseResult.GetValue(optBvh);
 var openOutput = parseResult.GetValue(optOpen);
+
+var imageWidth = parseResult.GetValue(optWidth);
+var imageHeight = parseResult.GetValue(optHeight);
+
+// If only one of width or height is specified, calculate the other to maintain a 3:2 aspect ratio
+var specifiedImageWidth = parseResult.GetResult(optWidth) is { Implicit: false };
+var specifiedImageHeight = parseResult.GetResult(optHeight) is { Implicit: false };
+if (specifiedImageWidth ^ specifiedImageHeight)
+{
+    const float defaultAspectRatio = 3f / 2f;
+
+    if (!specifiedImageWidth) imageWidth = (int)Round(imageHeight * defaultAspectRatio);
+    else imageHeight = (int)Round(imageWidth / defaultAspectRatio);
+}
 
 Verbosity verbosity;
 if (parseResult.GetValue(optQuiet)) verbosity = Verbosity.Quiet;
