@@ -1,13 +1,18 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
-VisualStudioVersion = 18.2.11415.280 d18.0
+VisualStudioVersion = 18.2.11415.280
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RTI1W", "RTI1W\RTI1W.csproj", "{BE17BB2D-5E83-4897-A81B-5288EEA9F07F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RTI1W.Tests", "RTI1W.Tests\RTI1W.Tests.csproj", "{104B0119-F9D7-460F-8E60-63FFEBF2A8BA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RTI1W.Benchmarks", "RTI1W.Benchmarks\RTI1W.Benchmarks.csproj", "{1DD2C6B7-181D-4791-9401-93625C4D6A10}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{4532C47D-A722-4673-9078-70D83FCFBAB5}"
+	ProjectSection(SolutionItems) = preProject
+		optimization_report.md = optimization_report.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
