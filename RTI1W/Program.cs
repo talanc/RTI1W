@@ -300,33 +300,102 @@ void RunInteractive()
     var pitch = Asin(forward.Y);
 
     var interactiveCamera = camera;
-    var rerender = true;
+
+    var workerCount = Math.Max(1, numThreads);
+    var renderSignal = new ManualResetEventSlim(false);
+
+    const int targetTileCount = 64;
+    var tilesX = Math.Max(1, (int)Ceiling(Sqrt(targetTileCount * ((float)imageWidth / imageHeight))));
+    var tilesY = Math.Max(1, (int)Ceiling((float)targetTileCount / tilesX));
+    var tileWidth = Math.Max(1, (imageWidth + tilesX - 1) / tilesX);
+    var tileHeight = Math.Max(1, (imageHeight + tilesY - 1) / tilesY);
+    var totalTiles = tilesX * tilesY;
+    var tiles = Enumerable.Range(0, totalTiles).ToArray();
+
+    var renderGeneration = 0;
+    var completedTiles = 0;
+    var nextTile = 0;
+    var stopWorkers = 0;
+    
+    var workerTasks = new Task[workerCount];
 
     void UpdateDirectionAndCamera()
     {
-        var dir = UnitVector(new Vector3(
-            Cos(pitch) * Cos(yaw),
-            Sin(pitch),
-            Cos(pitch) * Sin(yaw)));
+        var dir = UnitVector(V3(
+            x: Cos(pitch) * Cos(yaw),
+            y: Sin(pitch),
+            z: Cos(pitch) * Sin(yaw)
+        ));
 
         interactiveCamera = new Camera(cameraPos, cameraPos + dir, vUp, 20, aspectRatio, aperture, distToFocus);
     }
 
-    void RenderInteractiveFrame()
+    void WorkerLoop(int threadIndex)
     {
-        var tasks = new Task[numThreads];
-        for (var i = 0; i < numThreads; i++)
+        while (true)
         {
-            var localIdx = i;
-            tasks[localIdx] = Task.Run(() =>
+        start:
+            if (Volatile.Read(ref stopWorkers) != 0)
             {
-                for (var j = localIdx; j < imageHeight; j += numThreads)
+                break;
+            }
+
+            renderSignal.Wait();
+
+            if (Volatile.Read(ref stopWorkers) != 0)
+            {
+                break;
+            }
+
+            var generation = Volatile.Read(ref renderGeneration);
+
+            while (true)
+            {
+                if (generation != Volatile.Read(ref renderGeneration))
                 {
+                    goto start;
+                }
+
+                var tileIndex = Interlocked.Increment(ref nextTile) - 1;
+                if (tileIndex >= totalTiles)
+                {
+                    if (generation == Volatile.Read(ref renderGeneration))
+                    {
+                        renderSignal.Reset();
+                    }
+                    break;
+                }
+
+                var tileX = tiles[tileIndex] % tilesX;
+                var tileY = tiles[tileIndex] / tilesX;
+
+                var widthStart = tileX * tileWidth;
+                var widthEnd = Math.Min(imageWidth, widthStart + tileWidth);
+                var widthStep = 1;
+
+                var heightStart = tileY * tileHeight;
+                var heightEnd = Math.Min(imageHeight, heightStart + tileHeight);
+                var heightStep = 1;
+
+                var localCamera = interactiveCamera;
+
+                for (var j = heightStart; j < heightEnd; j += heightStep)
+                {
+                    if (generation != Volatile.Read(ref renderGeneration))
+                    {
+                        goto start;
+                    }
+
                     var pixY = imageHeight - 1 - j;
                     var dataY = j;
 
-                    for (var i = 0; i < imageWidth; i++)
+                    for (var i = widthStart; i < widthEnd; i += widthStep)
                     {
+                        if (generation != Volatile.Read(ref renderGeneration))
+                        {
+                            goto start;
+                        }
+
                         var pixX = i;
                         var dataX = i;
 
@@ -335,16 +404,27 @@ void RunInteractive()
                         {
                             var u = (pixX + RandomValue()) / (imageWidth - 1);
                             var v = (pixY + RandomValue()) / (imageHeight - 1);
-                            var r = interactiveCamera.GetRay(u, v);
+                            var r = localCamera.GetRay(u, v);
                             pixelColor += RayColor(r, maxDepth);
                         }
 
                         SetPixel(interactiveImage, dataX, dataY, pixelColor);
                     }
                 }
-            });
+
+                Interlocked.Increment(ref completedTiles);
+            }
         }
-        Task.WaitAll(tasks);
+    }
+
+    void StartRender()
+    {
+        Array.Clear(interactiveImage);
+        Random.Shared.Shuffle(tiles);
+        Interlocked.Exchange(ref completedTiles, 0);
+        Interlocked.Exchange(ref nextTile, 0);
+        Interlocked.Increment(ref renderGeneration);
+        renderSignal.Set();
     }
 
     void UpdateTexturePixels(Texture2D texture)
@@ -363,32 +443,36 @@ void RunInteractive()
 
     UpdateDirectionAndCamera();
 
+    for (var i = 0; i < workerCount; i++)
+    {
+        var localIdx = i;
+        workerTasks[localIdx] = Task.Run(() => WorkerLoop(localIdx));
+    }
+
+    var windowSizeWidth = 750;
+    var windowSizeHeight = (int)Round(windowSizeWidth / aspectRatio);
+    var windowSizeIncrements = 150;
+
     Raylib.SetConfigFlags(ConfigFlags.ResizableWindow);
-    Raylib.InitWindow(750, 500, "RTI1W - Interactive");
+    Raylib.InitWindow(windowSizeWidth, windowSizeHeight, "RTI1W - Interactive");
     Raylib.SetTargetFPS(60);
 
     var blankImage = Raylib.GenImageColor(imageWidth, imageHeight, Color.Black);
     var frameTexture = Raylib.LoadTextureFromImage(blankImage);
     Raylib.UnloadImage(blankImage);
 
+    StartRender();
+
+    var uploadTimer = Stopwatch.StartNew();
+    var uploadedGeneration = -1;
+    var uploadedTiles = -1;
+
     while (!Raylib.WindowShouldClose())
     {
         if (Raylib.IsWindowResized())
         {
-            //imageWidth = Math.Max(1, Raylib.GetScreenWidth());
-            //imageHeight = Math.Max(1, Raylib.GetScreenHeight());
-            //aspectRatio = (float)imageWidth / imageHeight;
-
-            //interactiveImage = new int[imageWidth * imageHeight];
-            //texturePixels = new Color[imageWidth * imageHeight];
-
-            //Raylib.UnloadTexture(frameTexture);
-            //var resizedBlank = Raylib.GenImageColor(imageWidth, imageHeight, Color.Black);
-            //frameTexture = Raylib.LoadTextureFromImage(resizedBlank);
-            //Raylib.UnloadImage(resizedBlank);
-
             UpdateDirectionAndCamera();
-            rerender = true;
+            StartRender();
         }
 
         var moveSpeed = 0.2f;
@@ -407,7 +491,28 @@ void RunInteractive()
         if (Raylib.IsKeyDown(KeyboardKey.E)) { cameraPos += vUp * moveSpeed; moved = true; }
         if (Raylib.IsKeyDown(KeyboardKey.Q)) { cameraPos -= vUp * moveSpeed; moved = true; }
 
-        if (Raylib.IsMouseButtonDown(MouseButton.Left))
+        var newWindowSizeWidth = windowSizeWidth;
+
+        if (Raylib.IsKeyPressed(KeyboardKey.Minus))
+        {
+            if (windowSizeWidth >= windowSizeIncrements * 2)
+            {
+                windowSizeWidth -= windowSizeIncrements;
+            }
+        }
+
+        if (Raylib.IsKeyPressed(KeyboardKey.Equal))
+        {
+            windowSizeWidth += windowSizeIncrements;
+        }
+
+        if (windowSizeWidth != newWindowSizeWidth)
+        {
+            windowSizeHeight = (int)Round(windowSizeWidth / aspectRatio);
+            Raylib.SetWindowSize(windowSizeWidth, windowSizeHeight);
+        }
+
+        if (Raylib.IsMouseButtonDown(MouseButton.Left) || Raylib.IsMouseButtonDown(MouseButton.Right))
         {
             var mouseDelta = Raylib.GetMouseDelta();
             const float mouseSensitivity = 0.004f;
@@ -425,14 +530,20 @@ void RunInteractive()
         if (moved)
         {
             UpdateDirectionAndCamera();
-            rerender = true;
+            StartRender();
         }
 
-        if (rerender)
+        var currentGeneration = Volatile.Read(ref renderGeneration);
+        var currentTiles = Volatile.Read(ref completedTiles);
+        var frameDone = currentTiles >= totalTiles;
+        var shouldUpload = currentGeneration != uploadedGeneration || currentTiles != uploadedTiles;
+
+        if (shouldUpload && (frameDone || uploadTimer.ElapsedMilliseconds >= 100))
         {
-            RenderInteractiveFrame();
             UpdateTexturePixels(frameTexture);
-            rerender = false;
+            uploadedGeneration = currentGeneration;
+            uploadedTiles = currentTiles;
+            uploadTimer.Restart();
         }
 
         Raylib.BeginDrawing();
@@ -448,6 +559,12 @@ void RunInteractive()
         Raylib.EndDrawing();
     }
 
+    Volatile.Write(ref renderGeneration, -1);
+    Interlocked.Exchange(ref stopWorkers, 1);
+    renderSignal.Set();
+    Task.WaitAll(workerTasks);
+
+    renderSignal.Dispose();
     Raylib.UnloadTexture(frameTexture);
     Raylib.CloseWindow();
 }
