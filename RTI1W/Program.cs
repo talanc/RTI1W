@@ -1,13 +1,4 @@
-﻿global using RTI1W;
-global using System.Numerics;
-global using System.Runtime.CompilerServices;
-global using static RTI1W.Helpers;
-global using static System.Console;
-global using static System.MathF;
-using System.CommandLine;
-using System.CommandLine.Parsing;
-using System.Diagnostics;
-using System.Runtime.Intrinsics;
+﻿using System.CommandLine;
 using Raylib_cs;
 
 //
@@ -51,19 +42,30 @@ var optVerbosity = addOption("--verbosity", "Verbosity output mode", Verbosity.N
 var optQuiet = addOption("-q", "Quiet output (--verbosity Quiet)", false);
 var optVerbose = addOption("-v", "Verbose output (--verbosity Verbose)", false);
 
-// Ensure only one of the verbosity options are used
+// Don't use more than 1 verbosity option
 rootCommand.Validators.Add(result =>
 {
     var opts = new Option[] { optVerbosity, optVerbose, optQuiet };
-
-    var num = result.Children
-        .OfType<OptionResult>()
-        .Count(curr => opts.Contains(curr.Option));
+    var num = opts.Count(curr => result.GetResult(curr) is { Implicit: false });
 
     if (num > 1)
     {
         var names = string.Join(", ", opts.Select(curr => curr.Name));
         result.AddError($"Only one of the following options can be used: {names}");
+    }
+});
+
+// Ensure num threads is in the range of [1, ProcCount]
+rootCommand.Validators.Add(result =>
+{
+    var numThreads = result.GetValue(optThreads);
+
+    var minThreads = 1;
+    var maxThreads = Environment.ProcessorCount;
+
+    if (numThreads < minThreads || numThreads > maxThreads)
+    {
+        result.AddError($"{optThreads.Name} must be between {minThreads} and {maxThreads}");
     }
 });
 
@@ -78,7 +80,7 @@ if (parseResult.Errors.Count > 0 ||
 var outputPath = parseResult.GetRequiredValue(optOutput);
 var samplesPerPixel = parseResult.GetValue(optSamples);
 var maxDepth = parseResult.GetValue(optMaxDepth);
-var numThreads = Math.Max(1, parseResult.GetValue(optThreads));
+var numThreads = parseResult.GetValue(optThreads);
 var bvh = parseResult.GetValue(optBvh);
 var openOutput = parseResult.GetValue(optOpen);
 var interactive = parseResult.GetValue(optInteractive);

@@ -1,6 +1,4 @@
-﻿using System.Diagnostics;
-
-namespace RTI1W;
+﻿namespace RTI1W;
 
 public static class Metrics
 {
