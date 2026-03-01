@@ -460,20 +460,28 @@ void RunInteractive()
             rerender = true;
         }
 
-        var moveSpeed = 0.2f;
-
-        var dir = UnitVector(new Vector3(
+        var dir = UnitVector(V3(
             Cos(pitch) * Cos(yaw),
             Sin(pitch),
-            Cos(pitch) * Sin(yaw)));
+            Cos(pitch) * Sin(yaw)
+        ));
         var right = UnitVector(Cross(dir, vUp));
 
-        if (Raylib.IsKeyDown(KeyboardKey.W)) { cameraPos += dir * moveSpeed; rerender = true; }
-        if (Raylib.IsKeyDown(KeyboardKey.S)) { cameraPos -= dir * moveSpeed; rerender = true; }
-        if (Raylib.IsKeyDown(KeyboardKey.A)) { cameraPos -= right * moveSpeed; rerender = true; }
-        if (Raylib.IsKeyDown(KeyboardKey.D)) { cameraPos += right * moveSpeed; rerender = true; }
-        if (Raylib.IsKeyDown(KeyboardKey.E)) { cameraPos += vUp * moveSpeed; rerender = true; }
-        if (Raylib.IsKeyDown(KeyboardKey.Q)) { cameraPos -= vUp * moveSpeed; rerender = true; }
+        var move = V3(0, 0, 0);
+        if (Raylib.IsKeyDown(KeyboardKey.W)) { move += dir; }
+        if (Raylib.IsKeyDown(KeyboardKey.S)) { move -= dir; }
+        if (Raylib.IsKeyDown(KeyboardKey.A)) { move -= right; }
+        if (Raylib.IsKeyDown(KeyboardKey.D)) { move += right; }
+        if (Raylib.IsKeyDown(KeyboardKey.E)) { move += vUp; }
+        if (Raylib.IsKeyDown(KeyboardKey.Q)) { move -= vUp; }
+
+        if (move.LengthSquared() != 0)
+        {
+            var moveSpeed = 0.2f;
+
+            cameraPos += move * moveSpeed;
+            rerender = true;
+        }
 
         var oldWindowSizeWidth = windowSizeWidth;
 
@@ -506,7 +514,7 @@ void RunInteractive()
         if (Raylib.IsMouseButtonDown(MouseButton.Left) || Raylib.IsMouseButtonDown(MouseButton.Right))
         {
             var mouseDelta = Raylib.GetMouseDelta();
-            const float mouseSensitivity = 0.004f;
+            var mouseSensitivity = 0.004f;
 
             if (mouseDelta.X != 0 || mouseDelta.Y != 0)
             {
