@@ -316,6 +316,8 @@ void RunInteractive()
     var tileHeight = Math.Max(1, (imageHeight + tilesY - 1) / tilesY);
     var tileCount = tilesX * tilesY;
 
+    // hmm its possible that worker threads may process the same tile at the same time
+    // its very unlikely in practice, e.g. i use 10 threads to render with 70 tiles
     var workItemCount = samplesPerPixel * tileCount;
     var workItems = new (int sample, int tile)[workItemCount];
     for (var i = 0; i < workItemCount; i++)
