@@ -472,8 +472,8 @@ void RunInteractive()
         if (Raylib.IsKeyDown(KeyboardKey.S)) { move -= dir; }
         if (Raylib.IsKeyDown(KeyboardKey.A)) { move -= right; }
         if (Raylib.IsKeyDown(KeyboardKey.D)) { move += right; }
-        if (Raylib.IsKeyDown(KeyboardKey.E)) { move += vUp; }
-        if (Raylib.IsKeyDown(KeyboardKey.Q)) { move -= vUp; }
+        if (Raylib.IsKeyDown(KeyboardKey.E)) { move -= vUp; }
+        if (Raylib.IsKeyDown(KeyboardKey.Q)) { move += vUp; }
 
         if (move.LengthSquared() != 0)
         {
