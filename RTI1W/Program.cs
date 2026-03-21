@@ -316,14 +316,10 @@ void RunInteractive()
     var tileHeight = Math.Max(1, (imageHeight + tilesY - 1) / tilesY);
     var tileCount = tilesX * tilesY;
 
-    // hmm its possible that worker threads may process the same tile at the same time
-    // its very unlikely in practice, e.g. i use 10 threads to render with 70 tiles
-    var workItemCount = samplesPerPixel * tileCount;
-    var workItems = new (int sample, int tile)[workItemCount];
-    for (var i = 0; i < workItemCount; i++)
+    var workItems = new (int sample, int tile)[tileCount];
+    for (var i = 0; i < workItems.Length; i++)
     {
-        var dr = Math.DivRem(i, tileCount);
-        workItems[i] = (dr.Quotient + 1, dr.Remainder);
+        workItems[i] = (sample: 1, tile: i);
     }
 
     var workerStartSignal = new ManualResetEventSlim(false);
@@ -333,6 +329,8 @@ void RunInteractive()
     var workerNextItem = 0;
 
     var workerScratch = new Vector3[image.Length];
+
+    var workerSample = 1;
     
     void UpdateDirectionAndCamera()
     {
@@ -361,7 +359,7 @@ void RunInteractive()
         }
 
         var workItemIndex = Interlocked.Increment(ref workerNextItem) - 1;
-        if (workItemIndex >= workItemCount)
+        if (workItemIndex >= workItems.Length)
         {
             if (generation == Volatile.Read(ref workerGeneration))
             {
@@ -424,14 +422,11 @@ void RunInteractive()
 
     void StartRender()
     {
-        var firstTiles = workItems.AsSpan().Slice(0, tileCount);
-        Random.Shared.Shuffle(firstTiles);
-        for (var i = tileCount; i < workItemCount; i++)
+        for (var i = 0; i < workItems.Length; i++)
         {
-            var sample = workItems[i].sample;
-            var tile = workItems[i % tileCount].tile;
-            workItems[i] = (sample, tile);
+            workItems[i].sample = workerSample;
         }
+        Random.Shared.Shuffle(workItems);
         Interlocked.Exchange(ref workerCompletedItems, 0);
         Interlocked.Exchange(ref workerNextItem, 0);
         if (workerGeneration > 1_000_000) Volatile.Write(ref workerGeneration, 0);
@@ -555,14 +550,23 @@ void RunInteractive()
 
         if (rerender)
         {
+            workerSample = 1;
             UpdateDirectionAndCamera();
             StartRender();
         }
 
         var currentGeneration = Volatile.Read(ref workerGeneration);
         var currentItems = Volatile.Read(ref workerCompletedItems);
-        var frameDone = currentItems >= workItemCount;
+        var frameDone = currentItems >= workItems.Length;
         var shouldUpload = currentGeneration != uploadedGeneration || currentItems != uploadedItems;
+
+        if (frameDone && workerSample < samplesPerPixel)
+        {
+            // and redo the frame with the next sample level
+            frameDone = false;
+            workerSample++;
+            StartRender();
+        }
 
         if (shouldUpload && (frameDone || uploadTimer.ElapsedMilliseconds >= 100))
         {
@@ -588,9 +592,8 @@ void RunInteractive()
         var info = "Done";
         if (!frameDone)
         {
-            var currentSample = workItems.ElementAtOrDefault(currentItems - 1).sample;
             // hmm this may allocate every frame
-            info = $"{currentSample}/{samplesPerPixel}";
+            info = $"{workerSample}/{samplesPerPixel}";
         }
         var infoMeasure = Raylib.MeasureText(info, 18);
         var infoX = windowSizeWidth - infoMeasure - 10;
