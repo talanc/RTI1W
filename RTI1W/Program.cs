@@ -346,11 +346,11 @@ void RunInteractive()
     void Worker()
     {
     start:
-        if (Volatile.Read(ref workerStop)) return;
+        if (Volatile.Read(ref workerGeneration) == -1) return;
         workerStartSignal.Wait();
-        if (Volatile.Read(ref workerStop)) return;
 
         var generation = Volatile.Read(ref workerGeneration);
+        if (generation == -1) return;
 
     tile:
         if (generation != Volatile.Read(ref workerGeneration))
@@ -361,10 +361,7 @@ void RunInteractive()
         var workItemIndex = Interlocked.Increment(ref workerNextItem) - 1;
         if (workItemIndex >= workItems.Length)
         {
-            if (generation == Volatile.Read(ref workerGeneration))
-            {
-                workerStartSignal.Reset();
-            }
+            if (generation == Volatile.Read(ref workerGeneration)) workerStartSignal.Reset();
             goto start;
         }
 
@@ -384,12 +381,6 @@ void RunInteractive()
 
         for (var j = heightStart; j < heightEnd; j += heightStep)
         {
-            // hmm this may not be needed here anymore...
-            if (generation != Volatile.Read(ref workerGeneration))
-            {
-                goto start;
-            }
-
             var pixY = imageHeight - 1 - j;
             var dataY = j;
 
@@ -603,7 +594,6 @@ void RunInteractive()
     }
 
     Volatile.Write(ref workerGeneration, -1);
-    Volatile.Write(ref workerStop, true);
     workerStartSignal.Set();
     Task.WaitAll(workerTasks);
     workerStartSignal.Dispose();
