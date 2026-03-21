@@ -323,7 +323,6 @@ void RunInteractive()
     }
 
     var workerStartSignal = new ManualResetEventSlim(false);
-    var workerStop = false;
     var workerGeneration = 0;
     var workerCompletedItems = 0;
     var workerNextItem = 0;
