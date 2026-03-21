@@ -315,13 +315,22 @@ void RunInteractive()
     var tileWidth = Math.Max(1, (imageWidth + tilesX - 1) / tilesX);
     var tileHeight = Math.Max(1, (imageHeight + tilesY - 1) / tilesY);
     var tileCount = tilesX * tilesY;
-    var tiles = Enumerable.Range(0, tileCount).ToArray();
+
+    var workItemCount = samplesPerPixel * tileCount;
+    var workItems = new (int sample, int tile)[workItemCount];
+    for (var i = 0; i < workItemCount; i++)
+    {
+        var dr = Math.DivRem(i, tileCount);
+        workItems[i] = (dr.Quotient + 1, dr.Remainder);
+    }
 
     var workerStartSignal = new ManualResetEventSlim(false);
     var workerStop = false;
     var workerGeneration = 0;
-    var workerCompletedTiles = 0;
-    var workerNextTile = 0;
+    var workerCompletedItems = 0;
+    var workerNextItem = 0;
+
+    var workerScratch = new Vector3[image.Length];
     
     void UpdateDirectionAndCamera()
     {
@@ -349,8 +358,8 @@ void RunInteractive()
             goto start;
         }
 
-        var tileIndex = Interlocked.Increment(ref workerNextTile) - 1;
-        if (tileIndex >= tileCount)
+        var workItemIndex = Interlocked.Increment(ref workerNextItem) - 1;
+        if (workItemIndex >= workItemCount)
         {
             if (generation == Volatile.Read(ref workerGeneration))
             {
@@ -359,7 +368,9 @@ void RunInteractive()
             goto start;
         }
 
-        var (tileY, tileX) = Math.DivRem(tiles[tileIndex], tilesX);
+        var (sample, tile) = workItems[workItemIndex];
+        
+        var (tileY, tileX) = Math.DivRem(tile, tilesX);
 
         var widthStart = tileX * tileWidth;
         var widthEnd = Math.Min(imageWidth, widthStart + tileWidth);
@@ -369,8 +380,11 @@ void RunInteractive()
         var heightEnd = Math.Min(imageHeight, heightStart + tileHeight);
         var heightStep = 1;
 
+        var sInv = 1f / sample;
+
         for (var j = heightStart; j < heightEnd; j += heightStep)
         {
+            // hmm this may not be needed here anymore...
             if (generation != Volatile.Read(ref workerGeneration))
             {
                 goto start;
@@ -384,28 +398,40 @@ void RunInteractive()
                 var pixX = i;
                 var dataX = i;
 
-                var pixelColor = C3(0, 0, 0);
-                for (var s = 0; s < samplesPerPixel; s++)
-                {
-                    var u = (pixX + RandomValue()) / (imageWidth - 1);
-                    var v = (pixY + RandomValue()) / (imageHeight - 1);
-                    var r = camera.GetRay(u, v);
-                    pixelColor += RayTracer.RayColor(world, r, maxDepth);
-                }
+                var u = (pixX + RandomValue()) / (imageWidth - 1);
+                var v = (pixY + RandomValue()) / (imageHeight - 1);
 
-                RayTracer.SetPixel(imageWidth, image, dataX, dataY, pixelColor, samplesPerPixelInv);
+                var pixelIndex = RayTracer.GetIndex(imageWidth, dataX, dataY);
+                var pixelColor = sample == 1
+                    ? workerScratch[pixelIndex] = ColorBlack
+                    : workerScratch[pixelIndex];
+
+                var r = camera.GetRay(u, v);
+                var color = RayTracer.RayColor(world, r, maxDepth);
+
+                pixelColor += color;
+
+                RayTracer.SetPixel(imageWidth, image, dataX, dataY, pixelColor, sInv);
+                workerScratch[pixelIndex] = pixelColor;
             }
         }
 
-        Interlocked.Increment(ref workerCompletedTiles);
+        Interlocked.Increment(ref workerCompletedItems);
         goto tile;
     }
 
     void StartRender()
     {
-        Random.Shared.Shuffle(tiles);
-        Interlocked.Exchange(ref workerCompletedTiles, 0);
-        Interlocked.Exchange(ref workerNextTile, 0);
+        var firstTiles = workItems.AsSpan().Slice(0, tileCount);
+        Random.Shared.Shuffle(firstTiles);
+        for (var i = tileCount; i < workItemCount; i++)
+        {
+            var sample = workItems[i].sample;
+            var tile = workItems[i % tileCount].tile;
+            workItems[i] = (sample, tile);
+        }
+        Interlocked.Exchange(ref workerCompletedItems, 0);
+        Interlocked.Exchange(ref workerNextItem, 0);
         if (workerGeneration > 1_000_000) Volatile.Write(ref workerGeneration, 0);
         else Interlocked.Increment(ref workerGeneration);
         workerStartSignal.Set();
@@ -449,7 +475,7 @@ void RunInteractive()
 
     var uploadTimer = Stopwatch.StartNew();
     var uploadedGeneration = -1;
-    var uploadedTiles = -1;
+    var uploadedItems = -1;
 
     while (!Raylib.WindowShouldClose())
     {
@@ -532,15 +558,15 @@ void RunInteractive()
         }
 
         var currentGeneration = Volatile.Read(ref workerGeneration);
-        var currentTiles = Volatile.Read(ref workerCompletedTiles);
-        var frameDone = currentTiles >= tileCount;
-        var shouldUpload = currentGeneration != uploadedGeneration || currentTiles != uploadedTiles;
+        var currentItems = Volatile.Read(ref workerCompletedItems);
+        var frameDone = currentItems >= workItemCount;
+        var shouldUpload = currentGeneration != uploadedGeneration || currentItems != uploadedItems;
 
         if (shouldUpload && (frameDone || uploadTimer.ElapsedMilliseconds >= 100))
         {
             UpdateTexturePixels(frameTexture);
             uploadedGeneration = currentGeneration;
-            uploadedTiles = currentTiles;
+            uploadedItems = currentItems;
             uploadTimer.Restart();
         }
 
@@ -553,7 +579,21 @@ void RunInteractive()
             Vector2.Zero,
             0,
             Color.White);
+
+        // hmm i think strings allocate, try with utf8/sbyte* instead
         Raylib.DrawText("WASD move, Q/E up-down, mouse left-click look", 10, 10, 18, Color.Black);
+
+        var info = "Done";
+        if (!frameDone)
+        {
+            var currentSample = workItems.ElementAtOrDefault(currentItems - 1).sample;
+            // hmm this may allocate every frame
+            info = $"{currentSample}/{samplesPerPixel}";
+        }
+        var infoMeasure = Raylib.MeasureText(info, 18);
+        var infoX = windowSizeWidth - infoMeasure - 10;
+        Raylib.DrawText(info, infoX, 10, 18, Color.Black);
+
         Raylib.EndDrawing();
     }
 

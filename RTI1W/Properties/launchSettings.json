@@ -2,7 +2,7 @@
   "profiles": {
     "RTI1W": {
       "commandName": "Project",
-      "commandLineArgs": "--seed 100 --threads 10 --open --interactive --samples 10 --width 800"
+      "commandLineArgs": "--seed 100 --threads 10 --open --interactive --samples 50 --width 800"
     }
   }
 }

@@ -33,7 +33,12 @@ public static class RayTracer
         var b = rgb_i32.GetElement(2);
 
         var d = (r << 16) | (g << 8) | b;
-        var i = x + (y * imageWidth);
+        var i = GetIndex(imageWidth, x, y);
         image[i] = d;
+    }
+
+    public static int GetIndex(int imageWidth, int x, int y)
+    {
+        return x + (y * imageWidth);
     }
 }
