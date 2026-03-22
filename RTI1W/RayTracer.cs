@@ -7,7 +7,7 @@ namespace RTI1W;
 
 public static class RayTracer
 {
-    public static Vector3 RayColor(Hittable world, Ray ray, int depth)
+    public static Vector3 RayColor(Hittable world, in Ray ray, int depth)
     {
         if (depth <= 0) return ColorBlack;
 
