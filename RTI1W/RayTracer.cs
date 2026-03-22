@@ -24,17 +24,20 @@ public static class RayTracer
 
     public static void SetPixel(int imageWidth, int[] image, int x, int y, Vector3 pixelColor, float samplesPerPixelInv)
     {
+        GetPixel(pixelColor, samplesPerPixelInv, out int r, out int g, out int b);
+        var i = GetIndex(imageWidth, x, y);
+        image[i] = (r << 16) | (g << 8) | b;
+    }
+
+    public static void GetPixel(Vector3 pixelColor, float samplesPerPixelInv, out int r, out int g, out int b)
+    {
         var c = Vector3.SquareRoot(pixelColor * samplesPerPixelInv);
         var rgb_f32 = 256 * Vector3.ClampNative(c, Vector3.Zero, new Vector3(0.999f));
         var rgb_i32 = Vector128.ConvertToInt32Native(rgb_f32.AsVector128Unsafe());
 
-        var r = rgb_i32.GetElement(0);
-        var g = rgb_i32.GetElement(1);
-        var b = rgb_i32.GetElement(2);
-
-        var d = (r << 16) | (g << 8) | b;
-        var i = GetIndex(imageWidth, x, y);
-        image[i] = d;
+        r = rgb_i32.GetElement(0);
+        g = rgb_i32.GetElement(1);
+        b = rgb_i32.GetElement(2);
     }
 
     public static int GetIndex(int imageWidth, int x, int y)

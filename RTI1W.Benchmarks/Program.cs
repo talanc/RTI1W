@@ -107,6 +107,13 @@ public class CalcPixelBenchmarks
     [Benchmark]
     public int New() => CalcPixel_New(color);
 
+    [Benchmark]
+    public int New2()
+    {
+        CalcPixel_New2(color, out var r, out var g, out var b);
+        return (r << 16) | (g << 8) | b;
+    }
+
     static CalcPixelBenchmarks()
     {
         Verify();
@@ -144,6 +151,18 @@ public class CalcPixelBenchmarks
 
         var d = (r << 16) | (g << 8) | b;
         return d;
+    }
+
+    private static void CalcPixel_New2(Vector3 pixelColor, out int r, out int g, out int b)
+    {
+        var c = Vector3.SquareRoot(pixelColor * samplesPerPixelInv);
+
+        var rgb_f32 = 256 * Vector3.ClampNative(c, Vector3.Zero, new Vector3(0.999f));
+        var rgb_i32 = Vector128.ConvertToInt32Native(rgb_f32.AsVector128Unsafe());
+
+        r = rgb_i32.GetElement(0);
+        g = rgb_i32.GetElement(1);
+        b = rgb_i32.GetElement(2);
     }
 
     public static void Verify()

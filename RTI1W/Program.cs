@@ -302,7 +302,7 @@ return 0;
 
 void RunInteractive()
 {
-    var texturePixels = new Color[imageWidth * imageHeight];
+    var texturePixels = new int[imageWidth * imageHeight];
 
     var cameraPos = lookFrom;
     var forward = UnitVector(lookAt - lookFrom);
@@ -396,12 +396,15 @@ void RunInteractive()
                     ? workerScratch[pixelIndex] = ColorBlack
                     : workerScratch[pixelIndex];
 
-                var r = camera.GetRay(u, v);
-                var color = RayTracer.RayColor(world, r, maxDepth);
-
+                var ray = camera.GetRay(u, v);
+                var color = RayTracer.RayColor(world, ray, maxDepth);
                 pixelColor += color;
-                // hmm i think we can remove the image and just use texturePixels
-                RayTracer.SetPixel(imageWidth, image, dataX, dataY, pixelColor, sInv);
+
+                // update calculated color on texture
+                RayTracer.GetPixel(pixelColor, sInv, out var r, out var g, out var b);
+                texturePixels[pixelIndex] = r | (g << 8) | (b << 16) | (0xFF << 24); // R8G8B8A8
+
+                // update accumulated color
                 workerScratch[pixelIndex] = pixelColor;
             }
         }
@@ -422,20 +425,6 @@ void RunInteractive()
         if (workerGeneration > 1_000_000) Volatile.Write(ref workerGeneration, 0);
         else Interlocked.Increment(ref workerGeneration);
         workerStartSignal.Set();
-    }
-
-    void UpdateTexturePixels(Texture2D texture)
-    {
-        for (var i = 0; i < image.Length; i++)
-        {
-            var d = image[i];
-            var r = (byte)((d >> 16) & 0xFF);
-            var g = (byte)((d >> 8) & 0xFF);
-            var b = (byte)(d & 0xFF);
-            texturePixels[i] = new Color(r, g, b, (byte)255);
-        }
-
-        Raylib.UpdateTexture(texture, texturePixels);
     }
 
     UpdateDirectionAndCamera();
@@ -560,11 +549,13 @@ void RunInteractive()
 
         if (shouldUpload && (frameDone || uploadTimer.ElapsedMilliseconds >= 100))
         {
-            UpdateTexturePixels(frameTexture);
+            Raylib.UpdateTexture(frameTexture, texturePixels);
             uploadedGeneration = currentGeneration;
             uploadedItems = currentItems;
             uploadTimer.Restart();
         }
+
+        // hmm we probably dont need to redraw if the frame is complete
 
         Raylib.BeginDrawing();
         Raylib.ClearBackground(Color.Black);
