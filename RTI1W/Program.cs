@@ -400,7 +400,7 @@ void RunInteractive()
                 var color = RayTracer.RayColor(world, r, maxDepth);
 
                 pixelColor += color;
-
+                // hmm i think we can remove the image and just use texturePixels
                 RayTracer.SetPixel(imageWidth, image, dataX, dataY, pixelColor, sInv);
                 workerScratch[pixelIndex] = pixelColor;
             }
