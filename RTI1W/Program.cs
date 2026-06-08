@@ -327,7 +327,7 @@ void RunInteractive()
     var workerCompletedItems = 0;
     var workerNextItem = 0;
 
-    var workerScratch = new Vector3[image.Length];
+    var workerScratch = new Vector3[texturePixels.Length];
 
     var workerSample = 1;
     
