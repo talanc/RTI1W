@@ -91,7 +91,7 @@ var imageHeight = parseResult.GetValue(optHeight);
 // If only one of width or height is specified, calculate the other to maintain a 3:2 aspect ratio
 var specifiedImageWidth = parseResult.GetResult(optWidth) is { Implicit: false };
 var specifiedImageHeight = parseResult.GetResult(optHeight) is { Implicit: false };
-if (specifiedImageWidth ^ specifiedImageHeight)
+if (specifiedImageWidth != specifiedImageHeight)
 {
     const float defaultAspectRatio = 3f / 2f;
 
