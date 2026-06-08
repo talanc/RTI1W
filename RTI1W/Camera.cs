@@ -2,6 +2,9 @@
 
 public class Camera
 {
+    public Vector3 LookFrom, LookAt, VUp;
+    public float VFov, AspectRatio, Aperture, FocusDist;
+
     public Vector3 Origin;
     public Vector3 LowerLeftCorner;
     public Vector3 Horizontal;
@@ -13,6 +16,14 @@ public class Camera
 
     public void SetPosition(Vector3 lookFrom, Vector3 lookAt, Vector3 vUp, float vFov, float aspectRatio, float aperture, float focusDist)
     {
+        LookFrom = lookFrom;
+        LookAt = lookAt;
+        VUp = vUp;
+        VFov = vFov;
+        AspectRatio = aspectRatio;
+        Aperture = aperture;
+        FocusDist = focusDist;
+
         var theta = DegreesToRadians(vFov);
         var h = Tan(theta / 2);
         var viewportHeight = 2.0f * h;
